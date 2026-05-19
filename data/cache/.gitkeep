@@ -1,0 +1,2 @@
+# Cache directory for Open5e API responses (24-hour TTL)
+# This directory is tracked in git but its contents are gitignored
