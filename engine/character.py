@@ -57,6 +57,16 @@ class FeatureEntry:
 
 
 @dataclass
+class Attack:
+    """One row in the Attacks & Spellcasting section of the sheet."""
+    name: str = ""
+    hit_bonus: int = 0
+    damage_dice: str = ""
+    damage_type: str = ""
+    notes: str = ""
+
+
+@dataclass
 class Character:
     """
     Central data model for a D&D 5e character.
@@ -117,6 +127,9 @@ class Character:
 
     spell_selection_mode: str = "random"
     # Modes: "random" (appropriate for build) | "manual" (select from list)
+
+    # Attacks (populated by equipment step)
+    attacks: list[Attack] = field(default_factory=list)
 
     # Features & Traits (card-reference list — name + brief note, not prose)
     features: list[FeatureEntry] = field(default_factory=list)
