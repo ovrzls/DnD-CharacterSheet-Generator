@@ -1,0 +1,110 @@
+{
+  "_meta": {
+    "pdf": "OtG-Revised-Charactersheet.pdf",
+    "page_size": [612, 792],
+    "coord_origin": "bottom-left (reportlab)",
+    "note": "x,y are the text draw point. Coordinates are approximate — run calibrate_overlay.py to verify visually and adjust."
+  },
+
+  "page1": {
+    "_comment": "Teal page — identity, abilities, skills, inventory",
+
+    "name":        {"x": 290, "y": 677, "font_size": 10, "align": "left"},
+    "pronouns":    {"x": 490, "y": 677, "font_size": 10, "align": "left"},
+    "char_class":  {"x": 290, "y": 644, "font_size": 10, "align": "left"},
+    "level":       {"x": 490, "y": 644, "font_size": 10, "align": "left"},
+    "inspiration": {"x": 323, "y": 614, "font_size": 9,  "align": "left"},
+
+    "str_score":   {"x": 340, "y": 517, "font_size": 11, "align": "center"},
+    "dex_score":   {"x": 340, "y": 484, "font_size": 11, "align": "center"},
+    "con_score":   {"x": 340, "y": 450, "font_size": 11, "align": "center"},
+    "int_score":   {"x": 340, "y": 417, "font_size": 11, "align": "center"},
+    "wis_score":   {"x": 340, "y": 384, "font_size": 11, "align": "center"},
+    "cha_score":   {"x": 340, "y": 350, "font_size": 11, "align": "center"},
+
+    "proficiencies_text": {"x": 90,  "y": 440, "font_size": 7, "align": "left", "multiline": true, "max_width": 175, "line_height": 11},
+    "senses":             {"x": 90,  "y": 167, "font_size": 7, "align": "left", "multiline": true, "max_width": 175, "line_height": 11},
+
+    "passive_perception":    {"x": 95, "y": 98, "font_size": 10, "align": "center"},
+    "passive_investigation": {"x": 95, "y": 75, "font_size": 10, "align": "center"},
+    "passive_insight":       {"x": 95, "y": 52, "font_size": 10, "align": "center"},
+
+    "skill_acrobatics":      {"x": 468, "y": 407, "font_size": 8, "align": "center"},
+    "skill_animal_handling": {"x": 468, "y": 384, "font_size": 8, "align": "center"},
+    "skill_arcana":          {"x": 468, "y": 362, "font_size": 8, "align": "center"},
+    "skill_athletics":       {"x": 468, "y": 339, "font_size": 8, "align": "center"},
+    "skill_deception":       {"x": 468, "y": 317, "font_size": 8, "align": "center"},
+    "skill_history":         {"x": 468, "y": 294, "font_size": 8, "align": "center"},
+    "skill_insight":         {"x": 468, "y": 272, "font_size": 8, "align": "center"},
+    "skill_intimidation":    {"x": 468, "y": 249, "font_size": 8, "align": "center"},
+    "skill_investigation":   {"x": 468, "y": 227, "font_size": 8, "align": "center"},
+    "skill_medicine":        {"x": 576, "y": 407, "font_size": 8, "align": "center"},
+    "skill_nature":          {"x": 576, "y": 384, "font_size": 8, "align": "center"},
+    "skill_perception":      {"x": 576, "y": 362, "font_size": 8, "align": "center"},
+    "skill_performance":     {"x": 576, "y": 339, "font_size": 8, "align": "center"},
+    "skill_persuasion":      {"x": 576, "y": 317, "font_size": 8, "align": "center"},
+    "skill_religion":        {"x": 576, "y": 294, "font_size": 8, "align": "center"},
+    "skill_sleight_of_hand": {"x": 576, "y": 272, "font_size": 8, "align": "center"},
+    "skill_stealth":         {"x": 576, "y": 249, "font_size": 8, "align": "center"},
+    "skill_survival":        {"x": 576, "y": 227, "font_size": 8, "align": "center"},
+
+    "inventory": {"x": 400, "y": 500, "font_size": 7, "align": "left", "multiline": true, "max_width": 195, "line_height": 12},
+    "equipped":  {"x": 400, "y": 390, "font_size": 7, "align": "left", "multiline": true, "max_width": 195, "line_height": 12},
+    "money":     {"x": 530, "y": 56,  "font_size": 9, "align": "left"},
+
+    "attunement_1": {"x": 462, "y": 56, "font_size": 7, "align": "center"},
+    "attunement_2": {"x": 480, "y": 56, "font_size": 7, "align": "center"},
+    "attunement_3": {"x": 498, "y": 56, "font_size": 7, "align": "center"}
+  },
+
+  "page2": {
+    "_comment": "Pink/magenta page — combat stats, saving throws, attacks, features, magic",
+
+    "initiative":  {"x": 115, "y": 710, "font_size": 14, "align": "center"},
+    "armor_class": {"x": 295, "y": 710, "font_size": 14, "align": "center"},
+    "hit_points":  {"x": 440, "y": 710, "font_size": 14, "align": "center"},
+    "movement":    {"x": 565, "y": 710, "font_size": 14, "align": "center"},
+
+    "save_str": {"x": 252, "y": 574, "font_size": 9, "align": "center"},
+    "save_dex": {"x": 252, "y": 550, "font_size": 9, "align": "center"},
+    "save_con": {"x": 467, "y": 574, "font_size": 9, "align": "center"},
+    "save_int": {"x": 467, "y": 550, "font_size": 9, "align": "center"},
+    "save_wis": {"x": 577, "y": 574, "font_size": 9, "align": "center"},
+    "save_cha": {"x": 577, "y": 550, "font_size": 9, "align": "center"},
+
+    "atk1_weapon": {"x": 85,  "y": 412, "font_size": 8, "align": "left"},
+    "atk1_hit":    {"x": 273, "y": 412, "font_size": 8, "align": "center"},
+    "atk1_dmg":    {"x": 320, "y": 412, "font_size": 8, "align": "center"},
+    "atk1_desc":   {"x": 380, "y": 412, "font_size": 7, "align": "left"},
+
+    "atk2_weapon": {"x": 85,  "y": 387, "font_size": 8, "align": "left"},
+    "atk2_hit":    {"x": 273, "y": 387, "font_size": 8, "align": "center"},
+    "atk2_dmg":    {"x": 320, "y": 387, "font_size": 8, "align": "center"},
+    "atk2_desc":   {"x": 380, "y": 387, "font_size": 7, "align": "left"},
+
+    "atk3_weapon": {"x": 85,  "y": 362, "font_size": 8, "align": "left"},
+    "atk3_hit":    {"x": 273, "y": 362, "font_size": 8, "align": "center"},
+    "atk3_dmg":    {"x": 320, "y": 362, "font_size": 8, "align": "center"},
+    "atk3_desc":   {"x": 380, "y": 362, "font_size": 7, "align": "left"},
+
+    "atk4_weapon": {"x": 85,  "y": 337, "font_size": 8, "align": "left"},
+    "atk4_hit":    {"x": 273, "y": 337, "font_size": 8, "align": "center"},
+    "atk4_dmg":    {"x": 320, "y": 337, "font_size": 8, "align": "center"},
+    "atk4_desc":   {"x": 380, "y": 337, "font_size": 7, "align": "left"},
+
+    "atk5_weapon": {"x": 85,  "y": 312, "font_size": 8, "align": "left"},
+    "atk5_hit":    {"x": 273, "y": 312, "font_size": 8, "align": "center"},
+    "atk5_dmg":    {"x": 320, "y": 312, "font_size": 8, "align": "center"},
+    "atk5_desc":   {"x": 380, "y": 312, "font_size": 7, "align": "left"},
+
+    "features_traits": {
+      "x": 640, "y": 490, "font_size": 7, "align": "left",
+      "multiline": true, "max_width": 150, "line_height": 11
+    },
+
+    "magic_abilities": {
+      "x": 50, "y": 230, "font_size": 7, "align": "left",
+      "multiline": true, "max_width": 510, "line_height": 11
+    }
+  }
+}
