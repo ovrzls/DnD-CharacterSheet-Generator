@@ -19,6 +19,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.colors import HexColor
 from pypdf import PdfReader, PdfWriter
+import pypdf.generic
 
 from engine.character import Character
 from engine.rules import derive_stats
@@ -316,6 +317,22 @@ def fill_otg_sheet(char: Character, output_path: str | Path) -> Path:
         overlay_page = PdfReader(io.BytesIO(overlay_bytes)).pages[0]
         blank_page.merge_page(overlay_page)
         writer.add_page(blank_page)
+
+    # Accessibility metadata
+    writer.add_metadata({
+        "/Title":   f"{char.name} — D&D Character Sheet",
+        "/Subject": "Dungeons & Dragons Character Sheet",
+        "/Lang":    "en",
+    })
+    writer._root_object.update({
+        pypdf.generic.NameObject("/MarkInfo"):
+            pypdf.generic.ArrayObject([
+                pypdf.generic.DictionaryObject({
+                    pypdf.generic.NameObject("/Marked"):
+                        pypdf.generic.BooleanObject(True)
+                })
+            ])
+    })
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

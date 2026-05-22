@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Step 4: Choose a Background{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+  <h1 class="step-heading">Step 4: Choose a Background</h1>
+  <p class="step-intro">
+    Your background is what your character did before becoming an adventurer —
+    a soldier, a scholar, a criminal, and more.
+    It gives your character skills and a special ability.
+  </p>
+
+  <form method="post" action="{{ url_for('step', n=4) }}" novalidate>
+
+    <div class="field {% if errors.background %}field-error{% endif %}">
+      <label for="background">Background <span class="required" aria-hidden="true">*</span></label>
+      <select
+        id="background"
+        name="background"
+        class="select-input"
+        aria-required="true"
+        {% if errors.background %}aria-describedby="bg-err" aria-invalid="true"{% endif %}
+        data-descriptions="{{ bg_json | e }}"
+        onchange="showDescription(this, 'bg-desc')"
+      >
+        <option value="">— choose a background —</option>
+        {% for b in bg_list %}
+        <option value="{{ b.name }}" {% if selected == b.name %}selected{% endif %}>
+          {{ b.name }}
+        </option>
+        {% endfor %}
+      </select>
+      {% if errors.background %}
+      <span id="bg-err" class="error-msg" role="alert">{{ errors.background }}</span>
+      {% endif %}
+    </div>
+
+    <div id="bg-desc" class="description-box" aria-live="polite" aria-atomic="true">
+      {% if selected %}
+        {% for b in bg_list %}
+          {% if b.name == selected %}
+          <p>{{ b.desc }}</p>
+          {% if b.feature %}<p class="desc-meta"><strong>Special Ability:</strong> {{ b.feature }}{% if b.feature_desc %} — {{ b.feature_desc }}{% endif %}</p>{% endif %}
+          {% endif %}
+        {% endfor %}
+      {% else %}
+      <p class="desc-placeholder">Select a background above to see a description.</p>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ prev_url }}" class="btn btn-secondary">
+        <span aria-hidden="true">←</span> Back
+      </a>
+      <button type="submit" class="btn btn-primary">
+        Next: Ability Scores
+        <span aria-hidden="true"> →</span>
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

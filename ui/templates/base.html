@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Create Your Character{% endblock %} — Open the Gates</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <header role="banner">
+    <div class="header-inner">
+      <a href="{{ url_for('index') }}" class="site-brand">
+        <span class="brand-otg">Open the Gates</span>
+        <span class="brand-sub">D&amp;D Character Creator</span>
+      </a>
+      <a href="{{ url_for('restart') }}" class="restart-link" aria-label="Start over and create a new character">Start over</a>
+    </div>
+  </header>
+
+  {% if current_step is defined %}
+  <nav aria-label="Wizard progress" class="progress-nav">
+    <div class="progress-inner">
+      <p class="progress-label">
+        <strong>Step {{ current_step }} of {{ total_steps }}:</strong>
+        {{ step_name }}
+      </p>
+      <div class="progress-track"
+           role="progressbar"
+           aria-valuenow="{{ current_step }}"
+           aria-valuemin="1"
+           aria-valuemax="{{ total_steps }}"
+           aria-label="Wizard progress: step {{ current_step }} of {{ total_steps }}">
+        <div class="progress-fill" style="width:{{ ((current_step / total_steps) * 100)|int }}%"></div>
+      </div>
+      <ol class="progress-steps" aria-hidden="true">
+        {% for i in range(1, total_steps + 1) %}
+        <li class="ps-dot
+          {%- if i < current_step %} ps-done
+          {%- elif i == current_step %} ps-active
+          {%- endif %}">{{ i }}</li>
+        {% endfor %}
+      </ol>
+    </div>
+  </nav>
+  {% endif %}
+
+  <main id="main-content" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer role="contentinfo" class="site-footer">
+    <p>Open the Gates Character Generator — made for accessible play</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/wizard.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

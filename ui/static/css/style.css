@@ -1,0 +1,409 @@
+/* ============================================================
+   OtG Character Creator — style.css
+   Primary teal: #00696A   (contrast vs white: 6.5:1 ✓ WCAG AA)
+   Accent pink:  #D4006A   (contrast vs white: 5.2:1 ✓ WCAG AA)
+   Body text:    #1a1a1a   (contrast vs white: 18:1 ✓)
+   ============================================================ */
+
+/* ── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.6;
+  color: #1a1a1a;
+  background: #f0f5f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Skip link ────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  background: #00696A;
+  color: #fff;
+  padding: .5rem 1rem;
+  font-weight: bold;
+  text-decoration: none;
+  z-index: 9999;
+  border-radius: 0 0 4px 0;
+}
+.skip-link:focus { top: 0; }
+
+/* ── Header ───────────────────────────────────────────────── */
+header[role="banner"] {
+  background: #00696A;
+  color: #fff;
+}
+.header-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: .75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.site-brand {
+  text-decoration: none;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.brand-otg { font-size: 1.15rem; font-weight: bold; }
+.brand-sub  { font-size: .8rem; opacity: .9; }
+.restart-link {
+  color: #fff;
+  font-size: .85rem;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.restart-link:hover, .restart-link:focus { opacity: .85; }
+
+/* ── Focus visible ────────────────────────────────────────── */
+:focus-visible {
+  outline: 3px solid #D4006A;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Progress nav ─────────────────────────────────────────── */
+.progress-nav {
+  background: #004d4e;
+  color: #fff;
+  padding: .6rem 0;
+}
+.progress-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+.progress-label {
+  font-size: .9rem;
+  margin-bottom: .35rem;
+}
+.progress-track {
+  height: 8px;
+  background: rgba(255,255,255,.25);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: .5rem;
+}
+.progress-fill {
+  height: 100%;
+  background: #D4006A;
+  border-radius: 4px;
+  transition: width .3s ease;
+  min-width: 8px;
+}
+.progress-steps {
+  display: flex;
+  gap: .35rem;
+  list-style: none;
+  flex-wrap: wrap;
+}
+.ps-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.2);
+  color: rgba(255,255,255,.7);
+  font-size: .75rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ps-done   { background: rgba(255,255,255,.5); color: #004d4e; }
+.ps-active { background: #D4006A; color: #fff; }
+
+/* ── Main layout ──────────────────────────────────────────── */
+main {
+  flex: 1;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 1.5rem 1rem 2rem;
+}
+
+/* ── Wizard card ──────────────────────────────────────────── */
+.wizard-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 2px 12px rgba(0,105,106,.12);
+}
+@media (max-width: 480px) { .wizard-card { padding: 1.25rem 1rem; } }
+
+.step-heading {
+  font-size: 1.45rem;
+  color: #00696A;
+  margin-bottom: .4rem;
+}
+.step-intro {
+  color: #444;
+  margin-bottom: 1.25rem;
+  max-width: 60ch;
+}
+
+/* ── Form fields ──────────────────────────────────────────── */
+.field {
+  margin-bottom: 1.25rem;
+}
+.field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: .35rem;
+  font-size: .95rem;
+}
+.required { color: #c00; }
+.field-hint {
+  display: block;
+  font-size: .8rem;
+  color: #666;
+  margin-top: .25rem;
+}
+.text-input, .select-input {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  padding: .6rem .75rem;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 2px solid #aaa;
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
+  min-height: 44px;
+}
+.select-input { cursor: pointer; }
+.select-narrow { max-width: 180px; }
+.text-input:focus, .select-input:focus {
+  border-color: #00696A;
+  outline: 3px solid #00696A;
+  outline-offset: 0;
+}
+.field-error label { color: #c00; }
+.field-error .text-input,
+.field-error .select-input { border-color: #c00; }
+.error-msg {
+  display: block;
+  color: #c00;
+  font-size: .875rem;
+  font-weight: 600;
+  margin-top: .3rem;
+}
+.error-global {
+  background: #fff0f0;
+  border: 2px solid #c00;
+  border-radius: 6px;
+  padding: .6rem .9rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .65rem 1.4rem;
+  font-size: 1rem;
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid transparent;
+  min-height: 44px;
+  min-width: 44px;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.btn-primary  { background: #00696A; color: #fff; border-color: #00696A; }
+.btn-primary:hover, .btn-primary:focus { background: #004d4e; border-color: #004d4e; }
+.btn-secondary{ background: #fff; color: #00696A; border-color: #00696A; }
+.btn-secondary:hover, .btn-secondary:focus { background: #e6f4f4; }
+.btn-accent   { background: #D4006A; color: #fff; border-color: #D4006A; }
+.btn-accent:hover, .btn-accent:focus { background: #a80055; border-color: #a80055; }
+.btn-outline  { background: transparent; color: #1a1a1a; border-color: #888; }
+.btn-outline:hover, .btn-outline:focus { background: #f0f0f0; }
+.btn-sm { font-size: .85rem; padding: .4rem .9rem; min-height: 36px; }
+.btn-download { width: 100%; justify-content: center; }
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-top: 1.5rem;
+  align-items: center;
+}
+
+/* ── Description box ──────────────────────────────────────── */
+.description-box {
+  background: #e6f4f4;
+  border-left: 4px solid #00696A;
+  border-radius: 0 6px 6px 0;
+  padding: .75rem 1rem;
+  margin: .5rem 0 1rem;
+  min-height: 60px;
+  font-size: .95rem;
+}
+.desc-placeholder { color: #666; font-style: italic; }
+.desc-meta { color: #555; font-size: .85rem; margin-top: .35rem; }
+
+/* ── Ability score methods ────────────────────────────────── */
+.method-fieldset { border: none; margin-bottom: 1.25rem; }
+.method-legend {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: .75rem;
+  color: #1a1a1a;
+}
+.method-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: .6rem;
+}
+.method-card {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  padding: .85rem 1rem;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.method-card:hover { border-color: #00696A; background: #f0f9f9; }
+.method-card input[type="radio"] { width: 20px; height: 20px; accent-color: #00696A; }
+.method-selected { border-color: #00696A; background: #e6f4f4; }
+.method-title { font-weight: 700; font-size: 1rem; }
+.method-desc  { font-size: .85rem; color: #444; line-height: 1.4; }
+
+/* ── Score assignment table ───────────────────────────────── */
+.score-panel { margin-top: .75rem; }
+.hidden      { display: none !important; }
+.score-pool-label { font-weight: 600; margin-bottom: .4rem; }
+.score-pool  { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.pool-chip {
+  background: #00696A;
+  color: #fff;
+  border-radius: 20px;
+  padding: .2rem .7rem;
+  font-weight: 700;
+  font-size: .95rem;
+}
+.score-table { border-collapse: collapse; width: 100%; max-width: 480px; }
+.score-table th {
+  background: #00696A;
+  color: #fff;
+  text-align: left;
+  padding: .4rem .6rem;
+  font-size: .85rem;
+}
+.score-table td { padding: .4rem .6rem; border-bottom: 1px solid #ddd; }
+.score-select, .score-input {
+  padding: .4rem .5rem;
+  font-size: .95rem;
+  font-family: inherit;
+  border: 2px solid #aaa;
+  border-radius: 5px;
+  background: #fff;
+  min-height: 38px;
+  min-width: 70px;
+}
+.score-input { width: 70px; text-align: center; }
+.mod-display  { font-weight: 700; text-align: center; }
+.cost-display { text-align: center; color: #555; font-size: .9rem; }
+.pb-budget-label { font-size: .95rem; margin-bottom: .5rem; }
+.roll-prompt { padding: .75rem 0; }
+.roll-prompt p { margin-bottom: .75rem; color: #444; }
+
+/* ── Review sections ──────────────────────────────────────── */
+.review-section {
+  border-top: 2px solid #e0ecec;
+  padding-top: 1rem;
+  margin-top: 1.25rem;
+}
+.review-section h2 { color: #00696A; margin-bottom: .6rem; }
+.review-section h3 { margin: .75rem 0 .35rem; font-size: 1rem; }
+
+.stat-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .25rem .75rem;
+  font-size: .95rem;
+  max-width: 480px;
+}
+.stat-list dt { font-weight: 600; color: #555; font-size: .85rem; text-transform: uppercase; }
+
+.item-list { padding-left: 1.25rem; }
+.item-list li { margin: .25rem 0; }
+
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+thead th {
+  background: #00696A;
+  color: #fff;
+  text-align: left;
+  padding: .4rem .6rem;
+}
+tbody td { border-bottom: 1px solid #ddd; padding: .4rem .6rem; }
+tbody tr:nth-child(even) td { background: #f0f9f9; }
+
+/* ── Stat chips (review / step 7) ─────────────────────────── */
+.stat-chips, .ability-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: .5rem 0 1rem;
+}
+.stat-chip, .ability-chip {
+  background: #e6f4f4;
+  border: 2px solid #00696A;
+  border-radius: 8px;
+  padding: .4rem .75rem;
+  text-align: center;
+  min-width: 80px;
+}
+.chip-label { display: block; font-size: .7rem; font-weight: 700; text-transform: uppercase; color: #00696A; }
+.chip-value { display: block; font-size: 1.3rem; font-weight: 700; }
+.chip-score { display: block; font-size: 1.25rem; font-weight: 700; }
+.chip-mod   { display: block; font-size: .85rem; color: #555; }
+
+/* ── Download cards (step 7) ──────────────────────────────── */
+.download-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: .75rem;
+}
+.download-card {
+  border: 2px solid #00696A;
+  border-radius: 8px;
+  padding: 1rem;
+}
+.download-card h3 { color: #00696A; margin-bottom: .35rem; font-size: 1rem; }
+.download-card p  { font-size: .875rem; color: #444; margin-bottom: .75rem; }
+
+/* ── Notice box ───────────────────────────────────────────── */
+.notice-box {
+  border-radius: 6px;
+  padding: .65rem 1rem;
+  margin-bottom: 1rem;
+  font-size: .9rem;
+}
+.notice-warn { background: #fff8e6; border: 2px solid #b8860b; color: #5a4200; }
+
+/* ── Footer ───────────────────────────────────────────────── */
+.site-footer {
+  background: #004d4e;
+  color: rgba(255,255,255,.8);
+  text-align: center;
+  padding: .75rem 1rem;
+  font-size: .8rem;
+  margin-top: auto;
+}

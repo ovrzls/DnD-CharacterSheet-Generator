@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Step 7: Review and Download{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+  <h1 class="step-heading">Step 7: Review and Download</h1>
+  <p class="step-intro">
+    Your character is ready! Review the summary below, then download your
+    character sheet in any of the three formats.
+  </p>
+
+  {% if error_msg %}
+  <div class="notice-box notice-warn" role="alert">
+    <strong>Warning:</strong> {{ error_msg }}
+  </div>
+  {% endif %}
+
+  {# ── Character summary ───────────────────────────────────────────── #}
+  <section aria-labelledby="summary-heading" class="review-section">
+    <h2 id="summary-heading">Character Summary</h2>
+
+    <dl class="stat-list">
+      <dt>Name</dt>          <dd>{{ char.name }}</dd>
+      <dt>Player</dt>        <dd>{{ char.player_name or '—' }}</dd>
+      {% if char.pronouns %}
+      <dt>Pronouns</dt>      <dd>{{ char.pronouns }}</dd>
+      {% endif %}
+      <dt>Species</dt>       <dd>{{ (char.species or '—') | title }}</dd>
+      <dt>Class</dt>         <dd>{{ (char.char_class or '—') | title }}, Level {{ char.level or 1 }}</dd>
+      <dt>Background</dt>    <dd>{{ (char.background or '—') | title }}</dd>
+    </dl>
+  </section>
+
+  {% if stats %}
+  <section aria-labelledby="combat-heading" class="review-section">
+    <h2 id="combat-heading">Combat Stats</h2>
+
+    <div class="stat-chips" role="group" aria-label="Core combat stats">
+      <div class="stat-chip">
+        <span class="chip-label">HP</span>
+        <span class="chip-value">{{ stats.hp }}</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">AC</span>
+        <span class="chip-value">{{ stats.ac }}</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">Initiative</span>
+        <span class="chip-value">{% if stats.initiative >= 0 %}+{% endif %}{{ stats.initiative }}</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">Speed</span>
+        <span class="chip-value">{{ stats.speed }} ft</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">Hit Die</span>
+        <span class="chip-value">{{ stats.hit_dice }}</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">Prof. Bonus</span>
+        <span class="chip-value">+{{ stats.prof_bonus }}</span>
+      </div>
+    </div>
+
+    <h3>Ability Scores</h3>
+    <div class="ability-chips" role="group" aria-label="Ability scores">
+      {% for ab in ['str','dex','con','int','wis','cha'] %}
+      {% set score, mod_str = stats.scores[ab] %}
+      <div class="ability-chip">
+        <span class="chip-label">{{ ab | upper }}</span>
+        <span class="chip-score">{{ score }}</span>
+        <span class="chip-mod">{{ mod_str }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if is_caster and stats.spell_ability %}
+    <h3>Spellcasting</h3>
+    <dl class="stat-list">
+      <dt>Ability</dt>         <dd>{{ stats.spell_ability }}</dd>
+      <dt>Spell Attack Bonus</dt><dd>{% if stats.spell_atk >= 0 %}+{% endif %}{{ stats.spell_atk }}</dd>
+      <dt>Spell Save DC</dt>   <dd>{{ stats.spell_dc }}</dd>
+    </dl>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {# ── Download ─────────────────────────────────────────────────────── #}
+  <section aria-labelledby="download-heading" class="review-section">
+    <h2 id="download-heading">Download Your Character Sheet</h2>
+    <p>Choose a format to download. All three contain the same information.</p>
+
+    <div class="download-row">
+
+      <div class="download-card">
+        <h3>Graphic PDF</h3>
+        <p>The official OtG branded character sheet, filled in with your character's stats.</p>
+        <form method="post" action="{{ url_for('generate_pdf') }}">
+          <button type="submit" class="btn btn-primary btn-download">
+            Download PDF
+          </button>
+        </form>
+      </div>
+
+      <div class="download-card">
+        <h3>Accessible HTML</h3>
+        <p>A plain webpage version — works with screen readers and is easy to print.</p>
+        <form method="post" action="{{ url_for('generate_html') }}">
+          <button type="submit" class="btn btn-primary btn-download">
+            Download HTML
+          </button>
+        </form>
+      </div>
+
+      <div class="download-card">
+        <h3>Plain Text</h3>
+        <p>A simple text file with all your stats — compatible with any device or program.</p>
+        <form method="post" action="{{ url_for('generate_txt') }}">
+          <button type="submit" class="btn btn-primary btn-download">
+            Download .txt
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="form-actions" style="margin-top:2rem">
+    <a href="{{ prev_url }}" class="btn btn-secondary">
+      <span aria-hidden="true">←</span> Back
+    </a>
+    <a href="{{ url_for('restart') }}" class="btn btn-outline">
+      Create a new character
+    </a>
+  </div>
+</div>
+{% endblock %}

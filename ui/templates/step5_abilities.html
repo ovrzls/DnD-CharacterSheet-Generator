@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Step 5: Ability Scores{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+  <h1 class="step-heading">Step 5: Ability Scores</h1>
+  <p class="step-intro">
+    Ability scores measure your character's basic traits — how strong, quick,
+    tough, smart, perceptive, or charming they are. Choose how to generate them.
+  </p>
+
+  {# ── Method picker ──────────────────────────────────────────────────── #}
+  <form method="post" action="{{ url_for('step', n=5) }}" novalidate id="ability-form">
+
+    <fieldset class="method-fieldset">
+      <legend class="method-legend">How would you like to generate ability scores?</legend>
+
+      <div class="method-options">
+
+        <label class="method-card {% if method == 'standard_array' %}method-selected{% endif %}">
+          <input type="radio" name="ability_method" value="standard_array"
+                 {% if method == 'standard_array' %}checked{% endif %}
+                 onchange="switchMethod('standard_array')"
+                 aria-describedby="desc-standard">
+          <span class="method-title">Standard Array</span>
+          <span class="method-desc" id="desc-standard">
+            Use a fixed set of scores: 15, 14, 13, 12, 10, 8.
+            Assign each number to one ability. Simple and balanced.
+          </span>
+        </label>
+
+        <label class="method-card {% if method == 'point_buy' %}method-selected{% endif %}">
+          <input type="radio" name="ability_method" value="point_buy"
+                 {% if method == 'point_buy' %}checked{% endif %}
+                 onchange="switchMethod('point_buy')"
+                 aria-describedby="desc-pb">
+          <span class="method-title">Point Buy</span>
+          <span class="method-desc" id="desc-pb">
+            Spend 27 points to set each score between 8 and 15.
+            Lower scores give back points; higher scores cost more.
+            Flexible — you decide what's important.
+          </span>
+        </label>
+
+        <label class="method-card {% if method == 'random_roll' %}method-selected{% endif %}">
+          <input type="radio" name="ability_method" value="random_roll"
+                 {% if method == 'random_roll' %}checked{% endif %}
+                 onchange="switchMethod('random_roll')"
+                 aria-describedby="desc-roll">
+          <span class="method-title">Random Roll</span>
+          <span class="method-desc" id="desc-roll">
+            Roll four six-sided dice (4d6), drop the lowest, six times.
+            Higher average than Standard Array, but unpredictable.
+          </span>
+        </label>
+
+      </div>
+    </fieldset>
+
+    {# ── Global score error ─────────────────────────────────────────── #}
+    {% if errors.scores %}
+    <div class="error-msg error-global" role="alert">{{ errors.scores }}</div>
+    {% endif %}
+
+    {# ── Standard Array / Random Roll assignment ────────────────────── #}
+    <div id="panel-standard" class="score-panel
+      {%- if method not in ('standard_array', 'random_roll') %} hidden{% endif %}">
+
+      {% if method == 'random_roll' and not rolled_scores %}
+      <div class="roll-prompt">
+        <p>Press the button below to roll your scores. You can re-roll before saving.</p>
+        <button type="submit" name="action" value="roll" class="btn btn-accent">
+          Roll My Scores
+        </button>
+      </div>
+      {% else %}
+
+      <p class="score-pool-label">
+        {% if method == 'random_roll' %}
+          Your rolled scores — assign each one to an ability:
+        {% else %}
+          Assign each Standard Array score to one ability:
+        {% endif %}
+      </p>
+      <p class="score-pool" aria-label="Available scores">
+        {% for s in (pool or standard_array) | sort(reverse=True) %}
+        <span class="pool-chip">{{ s }}</span>
+        {% endfor %}
+      </p>
+
+      <table class="score-table" aria-label="Assign ability scores">
+        <thead>
+          <tr>
+            <th scope="col">Ability</th>
+            <th scope="col">Score</th>
+            <th scope="col" aria-label="Modifier">Mod</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ab in abilities %}
+          <tr>
+            <td><label for="score_{{ ab }}">{{ ability_labels[ab] }}</label></td>
+            <td>
+              <select id="score_{{ ab }}" name="score_{{ ab }}"
+                      class="score-select"
+                      onchange="updateMod('{{ ab }}', this.value); trackUsed()"
+                      aria-label="{{ ability_labels[ab] }} score">
+                <option value="">—</option>
+                {% for s in (pool or standard_array) | sort(reverse=True) %}
+                <option value="{{ s }}"
+                  {% if saved_scores.get(ab) == s %}selected{% endif %}>
+                  {{ s }}
+                </option>
+                {% endfor %}
+              </select>
+            </td>
+            <td class="mod-display" id="mod_{{ ab }}" aria-live="polite">
+              {% if saved_scores.get(ab) %}{{ sign(mod(saved_scores[ab])) }}{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if method == 'random_roll' %}
+      <div style="margin-top:.75rem">
+        <button type="submit" name="action" value="roll" class="btn btn-outline btn-sm">
+          Re-roll Scores
+        </button>
+      </div>
+      {% endif %}
+
+      {% endif %}{# end roll_prompt #}
+    </div>
+
+    {# ── Point Buy ──────────────────────────────────────────────────── #}
+    <div id="panel-pb" class="score-panel
+      {%- if method != 'point_buy' %} hidden{% endif %}">
+
+      <p class="pb-budget-label">
+        Points remaining:
+        <strong id="pb-remaining" aria-live="polite">{{ pb_budget }}</strong>
+        / {{ pb_budget }}
+      </p>
+
+      <table class="score-table" aria-label="Set ability scores using point buy">
+        <thead>
+          <tr>
+            <th scope="col">Ability</th>
+            <th scope="col">Score ({{ pb_min }}–{{ pb_max }})</th>
+            <th scope="col" aria-label="Modifier">Mod</th>
+            <th scope="col">Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ab in abilities %}
+          <tr>
+            <td><label for="score_pb_{{ ab }}">{{ ability_labels[ab] }}</label></td>
+            <td>
+              <input
+                type="number"
+                id="score_pb_{{ ab }}"
+                name="score_{{ ab }}"
+                value="{{ saved_scores.get(ab, pb_min) }}"
+                min="{{ pb_min }}"
+                max="{{ pb_max }}"
+                class="score-input"
+                onchange="pbUpdate()"
+                oninput="pbUpdate()"
+                aria-label="{{ ability_labels[ab] }} score"
+              >
+            </td>
+            <td class="mod-display" id="pbmod_{{ ab }}" aria-live="polite">
+              {{ sign(mod(saved_scores.get(ab, pb_min))) }}
+            </td>
+            <td id="pbcost_{{ ab }}" class="cost-display">
+              {{ pb_costs_json | fromjson(saved_scores.get(ab, pb_min)) if false else '' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ prev_url }}" class="btn btn-secondary">
+        <span aria-hidden="true">←</span> Back
+      </a>
+      {% if not (method == 'random_roll' and not rolled_scores) %}
+      <button type="submit" name="action" value="save" class="btn btn-primary">
+        Next: Equipment &amp; Spells
+        <span aria-hidden="true"> →</span>
+      </button>
+      {% endif %}
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Pass Point Buy cost table to JS
+  const PB_COSTS  = {{ pb_costs_json }};
+  const PB_BUDGET = {{ pb_budget }};
+  const PB_MIN    = {{ pb_min }};
+  const PB_MAX    = {{ pb_max }};
+  const ABILITIES = {{ abilities | tojson }};
+</script>
+{% endblock %}

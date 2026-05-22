@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Step 3: Choose a Class{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+  <h1 class="step-heading">Step 3: Choose a Class and Level</h1>
+  <p class="step-intro">
+    Your class is your character's main job or skill set —
+    fighter, wizard, rogue, and more. This determines what you can do in the game.
+    For this prototype the highest level available is 5.
+  </p>
+
+  <form method="post" action="{{ url_for('step', n=3) }}" novalidate>
+
+    <div class="field {% if errors.char_class %}field-error{% endif %}">
+      <label for="char_class">Class <span class="required" aria-hidden="true">*</span></label>
+      <select
+        id="char_class"
+        name="char_class"
+        class="select-input"
+        aria-required="true"
+        {% if errors.char_class %}aria-describedby="class-err" aria-invalid="true"{% endif %}
+        data-descriptions="{{ classes_json | e }}"
+        onchange="showDescription(this, 'class-desc')"
+      >
+        <option value="">— choose a class —</option>
+        {% for c in classes_list %}
+        <option value="{{ c.key }}" {% if selected == c.key %}selected{% endif %}>
+          {{ c.name }}
+        </option>
+        {% endfor %}
+      </select>
+      {% if errors.char_class %}
+      <span id="class-err" class="error-msg" role="alert">{{ errors.char_class }}</span>
+      {% endif %}
+    </div>
+
+    <div id="class-desc" class="description-box" aria-live="polite" aria-atomic="true">
+      {% if selected %}
+        {% for c in classes_list %}
+          {% if c.key == selected %}
+          <p>{{ c.desc }}</p>
+          <p class="desc-meta">
+            Hit Die: d{{ c.hit_die }}
+            {% if c.is_caster %} · Spellcasting: {{ c.spell_ability }}{% endif %}
+          </p>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+      <p class="desc-placeholder">Select a class above to see a description.</p>
+      {% endif %}
+    </div>
+
+    <div class="field {% if errors.level %}field-error{% endif %}">
+      <label for="level">Level</label>
+      <select
+        id="level"
+        name="level"
+        class="select-input select-narrow"
+        {% if errors.level %}aria-describedby="level-err" aria-invalid="true"{% endif %}
+      >
+        {% for lvl in level_range %}
+        <option value="{{ lvl }}" {% if sel_level == lvl %}selected{% endif %}>
+          Level {{ lvl }}
+        </option>
+        {% endfor %}
+      </select>
+      {% if errors.level %}
+      <span id="level-err" class="error-msg" role="alert">{{ errors.level }}</span>
+      {% endif %}
+      <span class="field-hint">Levels 1–5 available in this prototype</span>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ prev_url }}" class="btn btn-secondary">
+        <span aria-hidden="true">←</span> Back
+      </a>
+      <button type="submit" class="btn btn-primary">
+        Next: Choose Background
+        <span aria-hidden="true"> →</span>
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

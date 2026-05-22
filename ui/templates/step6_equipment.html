@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Step 6: Equipment and Spells{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+  <h1 class="step-heading">Step 6: Equipment and Spells</h1>
+  <p class="step-intro">
+    Based on your class and ability scores, your character has been given
+    starting equipment and — if you chose a spellcasting class — a set of spells.
+    Review what your character has before continuing.
+  </p>
+
+  {% if error_msg %}
+  <div class="notice-box notice-warn" role="alert">
+    <strong>Note:</strong> Some equipment data could not be loaded ({{ error_msg }}).
+    You can still continue.
+  </div>
+  {% endif %}
+
+  {# ── Equipment ───────────────────────────────────────────────────── #}
+  <section aria-labelledby="eq-heading" class="review-section">
+    <h2 id="eq-heading">Starting Equipment</h2>
+    {% if eq_items %}
+    <ul class="item-list" aria-label="Starting equipment">
+      {% for item in eq_items %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>No equipment data available.</p>
+    {% endif %}
+  </section>
+
+  {# ── Attacks ─────────────────────────────────────────────────────── #}
+  {% if attacks %}
+  <section aria-labelledby="atk-heading" class="review-section">
+    <h2 id="atk-heading">Attacks</h2>
+    <table aria-label="Attack list">
+      <thead>
+        <tr>
+          <th scope="col">Weapon</th>
+          <th scope="col">+Hit</th>
+          <th scope="col">Damage</th>
+          <th scope="col">Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for name, hit, dmg, dtype in attacks %}
+        <tr>
+          <td>{{ name }}</td>
+          <td>{{ hit }}</td>
+          <td>{{ dmg }}</td>
+          <td>{{ dtype }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  {# ── Spells (casters only) ───────────────────────────────────────── #}
+  {% if is_caster %}
+  <section aria-labelledby="spells-heading" class="review-section">
+    <h2 id="spells-heading">Spells and Magic</h2>
+
+    {% if spell_ability %}
+    <dl class="stat-list">
+      <dt>Spellcasting Ability</dt><dd>{{ spell_ability }}</dd>
+      <dt>Spell Attack Bonus</dt>  <dd>{% if spell_attack >= 0 %}+{% endif %}{{ spell_attack }}</dd>
+      <dt>Spell Save DC</dt>       <dd>{{ spell_save_dc }}</dd>
+    </dl>
+    {% endif %}
+
+    {% if spell_slots %}
+    <h3>Spell Slots</h3>
+    <ul aria-label="Spell slots per level">
+      {% for level, count in spell_slots.items() | sort %}
+      <li>Level {{ level }} slots: {{ count }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if cantrips %}
+    <h3>Cantrips (always available, no slot needed)</h3>
+    <ul aria-label="Cantrips">
+      {% for c in cantrips %}<li>{{ c }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if spells %}
+    <h3>Spells</h3>
+    <ul aria-label="Spells known">
+      {% for s in spells %}<li>{{ s }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if not cantrips and not spells %}
+    <p>No spells could be loaded. You can still continue.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('step', n=6) }}">
+    <div class="form-actions">
+      <a href="{{ prev_url }}" class="btn btn-secondary">
+        <span aria-hidden="true">←</span> Back
+      </a>
+      <button type="submit" class="btn btn-primary">
+        Next: Review and Download
+        <span aria-hidden="true"> →</span>
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
