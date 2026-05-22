@@ -194,18 +194,33 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         inventory_lines.append(line)
     inventory_text = "\n".join(inventory_lines)
 
+    # Proficiency indicator: ◆ expertise, ● proficient, blank otherwise
+    def prof_marker(skill_name: str) -> str:
+        if skill_name in char.skill_expertises:
+            return "◆"
+        if skill_name in char.skill_proficiencies:
+            return "●"
+        return ""
+
     page1: dict[str, Any] = {
         "name":       char.name,
         "char_class": char.char_class,
         "level":      str(char.level),
         "inspiration": "✓" if char.inspiration else "",
 
-        "str_score": str(scores["str"]),
-        "dex_score": str(scores["dex"]),
-        "con_score": str(scores["con"]),
-        "int_score": str(scores["int"]),
-        "wis_score": str(scores["wis"]),
-        "cha_score": str(scores["cha"]),
+        "str_score":  str(scores["str"]),
+        "str_bonus":  _sign(mod(scores["str"])),
+        "dex_score":  str(scores["dex"]),
+        "dex_bonus":  _sign(mod(scores["dex"])),
+        "con_score":  str(scores["con"]),
+        "con_bonus":  _sign(mod(scores["con"])),
+        "int_score":  str(scores["int"]),
+        "int_bonus":  _sign(mod(scores["int"])),
+        "wis_score":  str(scores["wis"]),
+        "wis_bonus":  _sign(mod(scores["wis"])),
+        "cha_score":  str(scores["cha"]),
+        "cha_bonus":  _sign(mod(scores["cha"])),
+        "prof_bonus": _sign(prof),
 
         "passive_perception":    str(char.passive_perception),
         "passive_investigation": str(passive_investigation),
@@ -219,6 +234,7 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
 
     for field_name, (ability, skill_name) in skill_map.items():
         page1[field_name] = skill_total(ability, skill_name)
+        page1[f"skill_prof_{field_name[len('skill_'):]}"] = prof_marker(skill_name)
 
     # ---- page 2 ----
     # Saving throws: saving_throw_proficiencies is list of ability names e.g. ["strength","constitution"]
@@ -227,18 +243,27 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         bonus = prof if ability_name in char.saving_throw_proficiencies else 0
         return _sign(base + bonus)
 
+    def save_prof_marker(ability_name: str) -> str:
+        return "●" if ability_name in char.saving_throw_proficiencies else ""
+
     page2: dict[str, Any] = {
         "initiative":  _sign(char.initiative),
         "armor_class": str(char.armor_class),
         "hit_points":  str(char.max_hp),
         "movement":    f"{char.speed} ft",
 
-        "save_str": save_val("str", "strength"),
-        "save_dex": save_val("dex", "dexterity"),
-        "save_con": save_val("con", "constitution"),
-        "save_int": save_val("int", "intelligence"),
-        "save_wis": save_val("wis", "wisdom"),
-        "save_cha": save_val("cha", "charisma"),
+        "save_prof_str": save_prof_marker("strength"),
+        "save_str":      save_val("str", "strength"),
+        "save_prof_dex": save_prof_marker("dexterity"),
+        "save_dex":      save_val("dex", "dexterity"),
+        "save_prof_con": save_prof_marker("constitution"),
+        "save_con":      save_val("con", "constitution"),
+        "save_prof_int": save_prof_marker("intelligence"),
+        "save_int":      save_val("int", "intelligence"),
+        "save_prof_wis": save_prof_marker("wisdom"),
+        "save_wis":      save_val("wis", "wisdom"),
+        "save_prof_cha": save_prof_marker("charisma"),
+        "save_cha":      save_val("cha", "charisma"),
     }
 
     # Attacks (char.attacks is a list[Attack] built by equipment step)
