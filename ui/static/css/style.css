@@ -264,6 +264,13 @@ main {
 .btn-sm { font-size: .85rem; padding: .4rem .9rem; min-height: 36px; }
 .btn-download { width: 100%; justify-content: center; }
 
+.subclass-section {
+  border-left: 3px solid #00696A;
+  padding-left: 14px;
+  margin-top: 4px;
+  transition: opacity .2s;
+}
+
 .form-actions {
   display: flex;
   flex-wrap: wrap;

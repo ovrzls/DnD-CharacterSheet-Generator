@@ -71,6 +71,31 @@ STEP_NAMES = {
     7: "Review and Download",
 }
 
+SUBCLASS_UNLOCK: dict[str, int] = {
+    "cleric":   1, "sorcerer": 1, "warlock":  1,
+    "wizard":   2,
+    "barbarian":3, "bard":3, "druid":3, "fighter":3,
+    "monk":3, "paladin":3, "ranger":3, "rogue":3,
+}
+
+SUBCLASSES: dict[str, list[str]] = {
+    "barbarian": ["Path of the Berserker", "Path of the Totem Warrior"],
+    "bard":      ["College of Lore", "College of Valor"],
+    "cleric":    ["Life Domain", "Light Domain", "Trickery Domain",
+                  "Knowledge Domain", "Nature Domain", "Tempest Domain", "War Domain"],
+    "druid":     ["Circle of the Land", "Circle of the Moon"],
+    "fighter":   ["Champion", "Battle Master", "Eldritch Knight"],
+    "monk":      ["Way of the Open Hand", "Way of Shadow", "Way of the Four Elements"],
+    "paladin":   ["Oath of Devotion", "Oath of the Ancients", "Oath of Vengeance"],
+    "ranger":    ["Hunter", "Beast Master"],
+    "rogue":     ["Thief", "Assassin", "Arcane Trickster"],
+    "sorcerer":  ["Draconic Bloodline", "Wild Magic"],
+    "warlock":   ["The Fiend", "The Great Old One", "The Archfey"],
+    "wizard":    ["School of Abjuration", "School of Conjuration", "School of Divination",
+                  "School of Enchantment", "School of Evocation", "School of Illusion",
+                  "School of Necromancy", "School of Transmutation"],
+}
+
 ABILITIES = ["str", "dex", "con", "int", "wis", "cha"]
 ABILITY_LABELS = {
     "str": "Strength",
@@ -393,31 +418,45 @@ def _step2(data: dict):
     classes_list = _get_classes()
 
     if request.method == "POST":
-        cls   = request.form.get("char_class", "").strip()
-        level = request.form.get("level", "1").strip()
-
+        cls = request.form.get("char_class", "").strip()
         if not cls:
             errors["char_class"] = "Please select a class."
+
+        level_int = 1
         try:
-            level_int = int(level)
-            if not 1 <= level_int <= 5:
-                errors["level"] = "Level must be 1–5 for this prototype."
+            level_int = int(request.form.get("level", "1"))
+            if not 1 <= level_int <= 20:
+                errors["level"] = "Level must be between 1 and 20."
         except (ValueError, TypeError):
-            errors["level"] = "Please enter a valid level (1–5)."
-            level_int = 1
+            errors["level"] = "Please enter a valid level (1–20)."
+
+        subclass = request.form.get("subclass", "").strip()
+        if cls and not errors.get("char_class") and not errors.get("level"):
+            unlock = SUBCLASS_UNLOCK.get(cls.lower(), 3)
+            if level_int >= unlock and not subclass:
+                errors["subclass"] = (
+                    f"Please choose a {cls.title()} subclass "
+                    f"(available at level {unlock})."
+                )
 
         if not errors:
-            _save({"char_class": cls.lower(), "level": level_int})
+            _save({
+                "char_class": cls.lower(),
+                "level":      level_int,
+                "subclass":   subclass,
+            })
             return redirect(url_for("step", n=3))
 
     ctx = _step_ctx(2)
     ctx.update({
-        "errors":       errors,
-        "classes_list": classes_list,
-        "classes_json": json.dumps({c["key"]: c for c in classes_list}),
-        "selected":     data.get("char_class", ""),
-        "sel_level":    data.get("level", 1),
-        "level_range":  range(1, 6),
+        "errors":          errors,
+        "classes_list":    classes_list,
+        "classes_json":    json.dumps({c["key"]: c for c in classes_list}),
+        "selected":        data.get("char_class", ""),
+        "saved_level":     data.get("level", 1),
+        "saved_subclass":  data.get("subclass", ""),
+        "subclasses":      SUBCLASSES,
+        "subclass_unlock": SUBCLASS_UNLOCK,
     })
     return render_template("step2_class.html", **ctx)
 

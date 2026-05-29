@@ -7,7 +7,6 @@
   <p class="step-intro">
     Your class is your character's main job or skill set —
     fighter, wizard, rogue, and more. This determines what you can do in the game.
-    For this prototype the highest level available is 5.
   </p>
 
   <form method="post" action="{{ url_for('step', n=2) }}" novalidate>
@@ -52,23 +51,49 @@
     </div>
 
     <div class="field {% if errors.level %}field-error{% endif %}">
-      <label for="level">Level</label>
-      <select
+      <label for="level">Character level</label>
+      <input
+        type="number"
         id="level"
         name="level"
-        class="select-input select-narrow"
-        {% if errors.level %}aria-describedby="level-err" aria-invalid="true"{% endif %}
+        min="1"
+        max="20"
+        value="{{ saved_level or 1 }}"
+        class="text-input select-narrow"
+        aria-describedby="level-hint{% if errors.level %} level-err{% endif %}"
+        {% if errors.level %}aria-invalid="true"{% endif %}
       >
-        {% for lvl in level_range %}
-        <option value="{{ lvl }}" {% if sel_level == lvl %}selected{% endif %}>
-          Level {{ lvl }}
-        </option>
-        {% endfor %}
-      </select>
+      <span id="level-hint" class="field-hint">
+        Level 1 is a brand new character. Most campaigns start between levels 1 and 3.
+      </span>
       {% if errors.level %}
       <span id="level-err" class="error-msg" role="alert">{{ errors.level }}</span>
       {% endif %}
-      <span class="field-hint">Levels 1–5 available in this prototype</span>
+    </div>
+
+    <div id="subclass-section"
+         class="field subclass-section"
+         hidden
+         aria-live="polite">
+      <label for="subclass">
+        <span id="subclass-label-text">Subclass</span>
+        <span class="required" aria-hidden="true">*</span>
+      </label>
+      <select
+        id="subclass"
+        name="subclass"
+        class="select-input"
+        aria-describedby="subclass-hint{% if errors.subclass %} subclass-err{% endif %}"
+        {% if errors.subclass %}aria-invalid="true"{% endif %}
+      >
+        <option value="">— choose a subclass —</option>
+      </select>
+      <span id="subclass-hint" class="field-hint">
+        <span id="subclass-hint-text">Choose the specialization that best fits your character.</span>
+      </span>
+      {% if errors.subclass %}
+      <span id="subclass-err" class="error-msg" role="alert">{{ errors.subclass }}</span>
+      {% endif %}
     </div>
 
     <div class="form-actions">
@@ -83,4 +108,71 @@
 
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const SUBCLASSES     = {{ subclasses | tojson }};
+const SUBCLASS_UNLOCK = {{ subclass_unlock | tojson }};
+const SAVED_CLASS    = {{ (selected or '') | tojson }};
+const SAVED_SUBCLASS = {{ (saved_subclass or '') | tojson }};
+const SAVED_LEVEL    = {{ (saved_level or 1) | tojson }};
+
+const SUBCLASS_TERMS = {
+  "cleric":    "Divine Domain",
+  "sorcerer":  "Sorcerous Origin",
+  "warlock":   "Otherworldly Patron",
+  "druid":     "Druid Circle",
+  "fighter":   "Martial Archetype",
+  "wizard":    "Arcane Tradition",
+  "paladin":   "Sacred Oath",
+  "ranger":    "Ranger Archetype",
+  "rogue":     "Roguish Archetype",
+  "barbarian": "Primal Path",
+  "bard":      "Bard College",
+  "monk":      "Monastic Tradition",
+};
+
+function updateSubclassSection() {
+  const cls     = document.getElementById('char_class').value.toLowerCase();
+  const lvl     = parseInt(document.getElementById('level').value) || 1;
+  const unlock  = SUBCLASS_UNLOCK[cls] !== undefined ? SUBCLASS_UNLOCK[cls] : 3;
+  const section = document.getElementById('subclass-section');
+  const select  = document.getElementById('subclass');
+
+  if (!cls || lvl < unlock) {
+    section.hidden = true;
+    select.innerHTML = '<option value="">— choose a subclass —</option>';
+    return;
+  }
+
+  document.getElementById('subclass-label-text').textContent =
+    SUBCLASS_TERMS[cls] || 'Subclass';
+
+  const options = SUBCLASSES[cls] || [];
+  select.innerHTML =
+    '<option value="">— choose a subclass —</option>' +
+    options.map(s =>
+      '<option value="' + s + '"' + (s === SAVED_SUBCLASS ? ' selected' : '') + '>' + s + '</option>'
+    ).join('');
+
+  section.hidden = false;
+
+  if (window._subclassTrigger) {
+    select.focus();
+    window._subclassTrigger = false;
+  }
+}
+
+document.getElementById('char_class').addEventListener('change', function () {
+  window._subclassTrigger = true;
+  updateSubclassSection();
+});
+document.getElementById('level').addEventListener('change', function () {
+  window._subclassTrigger = true;
+  updateSubclassSection();
+});
+
+document.addEventListener('DOMContentLoaded', updateSubclassSection);
+</script>
 {% endblock %}
