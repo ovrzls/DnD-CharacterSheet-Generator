@@ -309,7 +309,7 @@ def _get_backgrounds() -> list[dict]:
                     return ben.get(field, "")
             return ""
 
-        parsed = sorted([
+        parsed = [
             {
                 "name": b.get("name", ""),
                 "desc": _first_para(
@@ -321,7 +321,19 @@ def _get_backgrounds() -> list[dict]:
                 "skill_proficiencies": _benefit(b.get("benefits", []), "skill_proficiency"),
             }
             for b in raw if b.get("name")
-        ], key=lambda x: x["name"])
+        ]
+        # Deduplicate by name, keeping the most complete entry
+        by_name: dict[str, dict] = {}
+        for b in parsed:
+            name = b["name"]
+            if name not in by_name:
+                by_name[name] = b
+            else:
+                score_new = bool(b.get("desc")) + bool(b.get("feature")) + bool(b.get("skill_proficiencies"))
+                score_old = bool(by_name[name].get("desc")) + bool(by_name[name].get("feature")) + bool(by_name[name].get("skill_proficiencies"))
+                if score_new > score_old:
+                    by_name[name] = b
+        parsed = sorted(by_name.values(), key=lambda x: x["name"])
         if parsed:
             _backgrounds_cache = parsed
             return _backgrounds_cache
@@ -479,7 +491,7 @@ def _step3(data: dict):
     ctx.update({
         "errors":           errors,
         "bg_list":          bg_list,
-        "backgrounds_json": json.dumps({b["name"]: b for b in bg_list}),
+        "backgrounds_data": {b["name"]: b for b in bg_list},
         "selected":         data.get("background", ""),
         "selected_desc":    next((b for b in bg_list if b["name"] == data.get("background")), {}),
     })

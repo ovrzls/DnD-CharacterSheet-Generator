@@ -44,7 +44,7 @@
       <p id="bg-desc-text" class="bg-desc-body"></p>
 
       <div id="bg-skills-row" class="bg-detail-row" hidden>
-        <span class="bg-detail-label">Skill proficiencies:</span>
+        <span class="bg-detail-label">Skills you'll gain:</span>
         <span id="bg-skills"></span>
       </div>
 
@@ -71,7 +71,7 @@
 
 {% block scripts %}
 <script>
-const BG_DATA = {{ backgrounds_json | tojson }};
+const BG_DATA = {{ backgrounds_data | tojson }};
 
 function showBackground(name) {
   const panel = document.getElementById('bg-description');
