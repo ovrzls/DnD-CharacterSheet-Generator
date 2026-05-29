@@ -520,10 +520,11 @@ def _step5(data: dict):
                         + ", ".join(str(s) for s in sorted(STANDARD_ARRAY, reverse=True))
                     )
             elif method == "random_roll":
-                rolled_pool = session.get("rolled_scores")
-                if not rolled_pool:
+                rolled_pool    = session.get("rolled_scores")
+                roll_confirmed = request.form.get("roll_confirmed") == "1"
+                if not rolled_pool and not roll_confirmed:
                     errors["scores"] = "Please roll your scores before continuing."
-                elif sorted(raw.values()) != sorted(rolled_pool):
+                elif rolled_pool and sorted(raw.values()) != sorted(rolled_pool):
                     errors["scores"] = "Please assign each rolled score exactly once."
             elif method == "point_buy":
                 range_errors = []
@@ -566,7 +567,9 @@ def _step5(data: dict):
                 "flex_bonuses":   flex_assignments,
                 "asi_slots":      asi_slots,
             })
-            session.pop("rolled_scores", None)
+            # Do NOT pop rolled_scores here — user may click Back from step 6
+            # and the pool must still be present for the restored UI and
+            # re-validation.  Session is only fully cleared on /restart.
             return redirect(url_for("step", n=6))
     else:
         method = session.get("pending_method") or method

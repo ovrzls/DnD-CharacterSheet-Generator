@@ -105,6 +105,8 @@ function _restoreState() {
     _rolled = (typeof ROLLED_SCORES !== 'undefined') ? [...ROLLED_SCORES] : [];
     _pool   = [..._rolled];
     if (hasSaved) ABILITIES.forEach(ab => { if (saved[ab]) _assign[ab] = saved[ab]; });
+    // Restoring from a prior roll counts as confirmed — POST validation will accept it
+    if (_rolled.length) _setRollConfirmed(true);
 
   } else {
     // standard_array
@@ -455,6 +457,7 @@ function rollScores() {
       _rolled = data.scores;
       _pool   = [..._rolled];
       _assign = {};
+      _setRollConfirmed(true);
       _renderPool();
       _renderValueCells();
       _renderBonusCells();
@@ -475,11 +478,17 @@ function rerollScores() {
       _rolled = data.scores;
       _pool   = [..._rolled];
       _assign = {};
+      _setRollConfirmed(true);
       _renderPool();
       _renderValueCells();
       _renderBonusCells();
       _updateAllRows();
     });
+}
+
+function _setRollConfirmed(confirmed) {
+  const el = document.getElementById('roll-confirmed-input');
+  if (el) el.value = confirmed ? '1' : '0';
 }
 
 // ── Form submit handler ───────────────────────────────────────────────────────
