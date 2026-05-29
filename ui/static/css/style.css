@@ -262,6 +262,19 @@ main {
 }
 .desc-placeholder { color: #666; font-style: italic; }
 .desc-meta { color: #555; font-size: .85rem; margin-top: .35rem; }
+.bg-desc-panel {
+  background: #fff;
+  border-left: 4px solid #00696A;
+  border-radius: 0 6px 6px 0;
+  padding: 16px;
+  margin-top: 12px;
+  box-shadow: 0 1px 4px rgba(0,105,106,.08);
+}
+.bg-desc-panel h3 { margin: 0 0 .5rem; color: #00696A; font-size: 1.05rem; }
+.bg-desc-body { margin: 0; color: #333; line-height: 1.6; }
+.bg-detail-row { margin-top: 10px; }
+.bg-detail-label { font-variant: small-caps; color: #666; margin-right: 6px; font-size: .85rem; }
+.bg-feature-body { font-size: 13px; color: #555; margin-top: 4px; line-height: 1.6; }
 
 /* ── Ability score methods ────────────────────────────────── */
 .method-fieldset { border: none; margin-bottom: 1.25rem; }

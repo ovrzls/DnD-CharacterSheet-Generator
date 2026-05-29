@@ -20,8 +20,7 @@
         class="select-input"
         aria-required="true"
         {% if errors.background %}aria-describedby="bg-err" aria-invalid="true"{% endif %}
-        data-descriptions="{{ bg_json | e }}"
-        onchange="showDescription(this, 'bg-desc')"
+        onchange="showBackground(this.value)"
       >
         <option value="">— choose a background —</option>
         {% for b in bg_list %}
@@ -35,17 +34,25 @@
       {% endif %}
     </div>
 
-    <div id="bg-desc" class="description-box" aria-live="polite" aria-atomic="true">
-      {% if selected %}
-        {% for b in bg_list %}
-          {% if b.name == selected %}
-          <p>{{ b.desc }}</p>
-          {% if b.feature %}<p class="desc-meta"><strong>Special Ability:</strong> {{ b.feature }}{% if b.feature_desc %} — {{ b.feature_desc }}{% endif %}</p>{% endif %}
-          {% endif %}
-        {% endfor %}
-      {% else %}
-      <p class="desc-placeholder">Select a background above to see a description.</p>
-      {% endif %}
+    <div id="bg-description"
+         role="region"
+         aria-live="polite"
+         aria-label="Background description"
+         class="bg-desc-panel"
+         hidden>
+      <h3 id="bg-desc-heading" tabindex="-1"></h3>
+      <p id="bg-desc-text" class="bg-desc-body"></p>
+
+      <div id="bg-skills-row" class="bg-detail-row" hidden>
+        <span class="bg-detail-label">Skill proficiencies:</span>
+        <span id="bg-skills"></span>
+      </div>
+
+      <div id="bg-feature-row" class="bg-detail-row" hidden>
+        <span class="bg-detail-label">Feature:</span>
+        <strong id="bg-feature-name"></strong>
+        <p id="bg-feature-desc" class="bg-feature-body"></p>
+      </div>
     </div>
 
     <div class="form-actions">
@@ -60,4 +67,56 @@
 
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const BG_DATA = {{ backgrounds_json | tojson }};
+
+function showBackground(name) {
+  const panel = document.getElementById('bg-description');
+  if (!name) { panel.hidden = true; return; }
+  const bg = BG_DATA[name];
+  if (!bg) { panel.hidden = true; return; }
+
+  // Truncate desc at sentence boundary before 400 chars
+  let desc = bg.desc || '';
+  if (desc.length > 400) {
+    const cut = desc.slice(0, 400);
+    const lastDot = cut.lastIndexOf('.');
+    desc = (lastDot > 50 ? cut.slice(0, lastDot + 1) : cut.trimEnd()) + '…';
+  }
+
+  document.getElementById('bg-desc-heading').textContent = name;
+  document.getElementById('bg-desc-text').textContent = desc;
+
+  const skillsRow = document.getElementById('bg-skills-row');
+  const skillsEl  = document.getElementById('bg-skills');
+  let skills = bg.skill_proficiencies || '';
+  if (Array.isArray(skills)) skills = skills.join(', ');
+  if (skills) {
+    skillsEl.textContent = skills;
+    skillsRow.hidden = false;
+  } else {
+    skillsRow.hidden = true;
+  }
+
+  const featureRow = document.getElementById('bg-feature-row');
+  if (bg.feature) {
+    document.getElementById('bg-feature-name').textContent = bg.feature;
+    document.getElementById('bg-feature-desc').textContent = bg.feature_desc || '';
+    featureRow.hidden = false;
+  } else {
+    featureRow.hidden = true;
+  }
+
+  panel.hidden = false;
+  document.getElementById('bg-desc-heading').focus();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const sel = document.getElementById('background');
+  if (sel && sel.value) showBackground(sel.value);
+});
+</script>
 {% endblock %}

@@ -275,12 +275,22 @@ def _get_backgrounds() -> list[dict]:
     try:
         # Use a source-filter-free client — srd-2014 only contains Acolyte
         raw = Open5eClient().get_backgrounds()
+        def _benefit(benefits, btype, field="desc"):
+            for ben in benefits:
+                if ben.get("type") == btype:
+                    return ben.get(field, "")
+            return ""
+
         parsed = sorted([
             {
-                "name":         b.get("name", ""),
-                "desc":         _first_para(b.get("desc", "")),
-                "feature":      b.get("feature_name", ""),
-                "feature_desc": _first_para(b.get("feature_desc", "")),
+                "name": b.get("name", ""),
+                "desc": _first_para(
+                    b.get("desc", "") or _benefit(b.get("benefits", []), "adventures_and_advancement"),
+                    600,
+                ),
+                "feature":            _benefit(b.get("benefits", []), "feature", "name"),
+                "feature_desc":       _first_para(_benefit(b.get("benefits", []), "feature"), 400),
+                "skill_proficiencies": _benefit(b.get("benefits", []), "skill_proficiency"),
             }
             for b in raw if b.get("name")
         ], key=lambda x: x["name"])
@@ -292,26 +302,26 @@ def _get_backgrounds() -> list[dict]:
     # Fallback: reached when API fails or returns empty results
     if not _backgrounds_cache:
         _backgrounds_cache = [
-            {"name": "Acolyte",               "desc": "You grew up in a religious community.",             "feature": "Shelter of the Faithful",   "feature_desc": ""},
-            {"name": "Charlatan",             "desc": "You excelled at deceiving others for profit.",     "feature": "False Identity",            "feature_desc": ""},
-            {"name": "City Watch",            "desc": "You served as a protector of an urban settlement.", "feature": "Watcher's Eye",            "feature_desc": ""},
-            {"name": "Criminal",              "desc": "You have a history outside the law.",              "feature": "Criminal Contact",          "feature_desc": ""},
-            {"name": "Entertainer",           "desc": "You thrive in front of an audience.",              "feature": "By Popular Demand",         "feature_desc": ""},
-            {"name": "Far Traveler",          "desc": "You come from a distant land.",                    "feature": "All Eyes on You",           "feature_desc": ""},
-            {"name": "Folk Hero",             "desc": "You rose from humble origins.",                    "feature": "Rustic Hospitality",        "feature_desc": ""},
-            {"name": "Guild Artisan",         "desc": "You are a skilled member of a guild.",             "feature": "Guild Membership",          "feature_desc": ""},
-            {"name": "Haunted One",           "desc": "You have been touched by dark forces.",            "feature": "Heart of Darkness",         "feature_desc": ""},
-            {"name": "Hermit",                "desc": "You lived in seclusion for a period of time.",     "feature": "Discovery",                 "feature_desc": ""},
-            {"name": "Mercenary Veteran",     "desc": "You have fought for coin across the land.",        "feature": "Mercenary Life",            "feature_desc": ""},
-            {"name": "Noble",                 "desc": "You come from a family of wealth and privilege.",  "feature": "Position of Privilege",     "feature_desc": ""},
-            {"name": "Outlander",             "desc": "You grew up in the wilds, far from civilization.", "feature": "Wanderer",                  "feature_desc": ""},
-            {"name": "Sage",                  "desc": "You spent years learning the lore of the world.", "feature": "Researcher",                "feature_desc": ""},
-            {"name": "Sailor",                "desc": "You sailed on a seagoing vessel for years.",       "feature": "Ship's Passage",            "feature_desc": ""},
-            {"name": "Soldier",               "desc": "You trained as a professional warrior.",           "feature": "Military Rank",             "feature_desc": ""},
-            {"name": "Spy",                   "desc": "You worked in the shadows, gathering secrets.",    "feature": "Criminal Contact",          "feature_desc": ""},
-            {"name": "Urban Bounty Hunter",   "desc": "You tracked down criminals for a living.",        "feature": "Ear to the Ground",         "feature_desc": ""},
-            {"name": "Urchin",                "desc": "You grew up on the streets alone.",               "feature": "City Secrets",              "feature_desc": ""},
-            {"name": "Uthgardt Tribe Member", "desc": "You grew up among the Uthgardt barbarian tribes.", "feature": "Uthgardt Heritage",        "feature_desc": ""},
+            {"name": "Acolyte",               "desc": "You grew up in a religious community.",             "feature": "Shelter of the Faithful",   "feature_desc": "", "skill_proficiencies": "Insight, Religion"},
+            {"name": "Charlatan",             "desc": "You excelled at deceiving others for profit.",     "feature": "False Identity",            "feature_desc": "", "skill_proficiencies": "Deception, Sleight of Hand"},
+            {"name": "City Watch",            "desc": "You served as a protector of an urban settlement.", "feature": "Watcher's Eye",            "feature_desc": "", "skill_proficiencies": "Athletics, Insight"},
+            {"name": "Criminal",              "desc": "You have a history outside the law.",              "feature": "Criminal Contact",          "feature_desc": "", "skill_proficiencies": "Deception, Stealth"},
+            {"name": "Entertainer",           "desc": "You thrive in front of an audience.",              "feature": "By Popular Demand",         "feature_desc": "", "skill_proficiencies": "Acrobatics, Performance"},
+            {"name": "Far Traveler",          "desc": "You come from a distant land.",                    "feature": "All Eyes on You",           "feature_desc": "", "skill_proficiencies": "Insight, Perception"},
+            {"name": "Folk Hero",             "desc": "You rose from humble origins.",                    "feature": "Rustic Hospitality",        "feature_desc": "", "skill_proficiencies": "Animal Handling, Survival"},
+            {"name": "Guild Artisan",         "desc": "You are a skilled member of a guild.",             "feature": "Guild Membership",          "feature_desc": "", "skill_proficiencies": "Insight, Persuasion"},
+            {"name": "Haunted One",           "desc": "You have been touched by dark forces.",            "feature": "Heart of Darkness",         "feature_desc": "", "skill_proficiencies": "Choose 2 from Arcana, Investigation, Religion, Survival"},
+            {"name": "Hermit",                "desc": "You lived in seclusion for a period of time.",     "feature": "Discovery",                 "feature_desc": "", "skill_proficiencies": "Medicine, Religion"},
+            {"name": "Mercenary Veteran",     "desc": "You have fought for coin across the land.",        "feature": "Mercenary Life",            "feature_desc": "", "skill_proficiencies": "Athletics, Persuasion"},
+            {"name": "Noble",                 "desc": "You come from a family of wealth and privilege.",  "feature": "Position of Privilege",     "feature_desc": "", "skill_proficiencies": "History, Persuasion"},
+            {"name": "Outlander",             "desc": "You grew up in the wilds, far from civilization.", "feature": "Wanderer",                  "feature_desc": "", "skill_proficiencies": "Athletics, Survival"},
+            {"name": "Sage",                  "desc": "You spent years learning the lore of the world.", "feature": "Researcher",                "feature_desc": "", "skill_proficiencies": "Arcana, History"},
+            {"name": "Sailor",                "desc": "You sailed on a seagoing vessel for years.",       "feature": "Ship's Passage",            "feature_desc": "", "skill_proficiencies": "Athletics, Perception"},
+            {"name": "Soldier",               "desc": "You trained as a professional warrior.",           "feature": "Military Rank",             "feature_desc": "", "skill_proficiencies": "Athletics, Intimidation"},
+            {"name": "Spy",                   "desc": "You worked in the shadows, gathering secrets.",    "feature": "Criminal Contact",          "feature_desc": "", "skill_proficiencies": "Deception, Stealth"},
+            {"name": "Urban Bounty Hunter",   "desc": "You tracked down criminals for a living.",        "feature": "Ear to the Ground",         "feature_desc": "", "skill_proficiencies": "Choose 2 from Deception, Insight, Persuasion, Stealth"},
+            {"name": "Urchin",                "desc": "You grew up on the streets alone.",               "feature": "City Secrets",              "feature_desc": "", "skill_proficiencies": "Sleight of Hand, Stealth"},
+            {"name": "Uthgardt Tribe Member", "desc": "You grew up among the Uthgardt barbarian tribes.", "feature": "Uthgardt Heritage",        "feature_desc": "", "skill_proficiencies": "Athletics, Survival"},
         ]
     return _backgrounds_cache
 
@@ -440,10 +450,11 @@ def _step4(data: dict):
 
     ctx = _step_ctx(4)
     ctx.update({
-        "errors":    errors,
-        "bg_list":   bg_list,
-        "bg_json":   json.dumps({b["name"]: b for b in bg_list}),
-        "selected":  data.get("background", ""),
+        "errors":           errors,
+        "bg_list":          bg_list,
+        "backgrounds_json": json.dumps({b["name"]: b for b in bg_list}),
+        "selected":         data.get("background", ""),
+        "selected_desc":    next((b for b in bg_list if b["name"] == data.get("background")), {}),
     })
     return render_template("step4_background.html", **ctx)
 
