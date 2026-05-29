@@ -1,9 +1,11 @@
 """
-Regression tests for step 5 template constant injection.
+Regression tests for step 4 (ability scores) template constant injection.
 
 Guards against the HTML-escaping bug where Jinja2 would render dict values
 such as PB_COSTS without |tojson, turning " into &#34; and breaking the
 inline <script> block so all constants were undefined in abilities.js.
+
+Note: Ability scores moved from step 5 → step 4 in the CHANGE-B5 reorder.
 """
 import json
 import re
@@ -44,11 +46,11 @@ def _get_constants_script(body: str) -> str:
 
 class TestStep5ConstantInjection:
     def test_page_loads(self, client):
-        resp = client.get("/step/5")
+        resp = client.get("/step/4")
         assert resp.status_code == 200
 
     def test_no_html_escaped_quotes_in_constants_script(self, client):
-        body = client.get("/step/5").data.decode("utf-8")
+        body = client.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
         assert script, "Could not find the constants <script> block"
         assert "&#34;" not in script, (
@@ -60,7 +62,7 @@ class TestStep5ConstantInjection:
         )
 
     def test_pb_costs_is_parseable_json(self, client):
-        body = client.get("/step/5").data.decode("utf-8")
+        body = client.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
         m = re.search(r"const PB_COSTS\s*=\s*({[^;]+});", script)
         assert m, "Could not find PB_COSTS constant"
@@ -68,7 +70,7 @@ class TestStep5ConstantInjection:
         assert costs.get("8") == 0, "PB_COSTS['8'] should be 0"
 
     def test_racial_bonuses_for_half_orc(self, client):
-        body = client.get("/step/5").data.decode("utf-8")
+        body = client.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
         m = re.search(r"const RACIAL_BONUSES\s*=\s*({[^;]+});", script)
         assert m, "Could not find RACIAL_BONUSES constant"
@@ -84,7 +86,7 @@ class TestStep5ConstantInjection:
                     "species": "Human", "char_class": "wizard",
                     "level": 1, "background": "Sage",
                 }
-            body = c.get("/step/5").data.decode("utf-8")
+            body = c.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
         m = re.search(r"const RACIAL_BONUSES\s*=\s*({[^;]+});", script)
         assert m, "Could not find RACIAL_BONUSES constant"
@@ -100,7 +102,7 @@ class TestStep5ConstantInjection:
                     "species": "Half-Elf", "char_class": "sorcerer",
                     "level": 1, "background": "Sage",
                 }
-            body = c.get("/step/5").data.decode("utf-8")
+            body = c.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
         m = re.search(r"const RACIAL_BONUSES\s*=\s*({[^;]+});", script)
         assert m
@@ -111,14 +113,14 @@ class TestStep5ConstantInjection:
 
     def test_default_method_is_standard_array(self, client):
         """First visit defaults to standard_array so Phase 2 is visible immediately."""
-        body = client.get("/step/5").data.decode("utf-8")
+        body = client.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
         m = re.search(r'const SAVED_METHOD\s*=\s*"([^"]+)"', script)
         assert m, "Could not find SAVED_METHOD constant"
         assert m.group(1) == "standard_array"
 
     def test_asi_slots_earned_is_integer(self, client):
-        body = client.get("/step/5").data.decode("utf-8")
+        body = client.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
         m = re.search(r"const ASI_SLOTS_EARNED\s*=\s*(\d+)", script)
         assert m, "Could not find ASI_SLOTS_EARNED"
@@ -126,7 +128,7 @@ class TestStep5ConstantInjection:
         assert int(m.group(1)) == 1
 
     def test_roll_confirmed_field_present_with_value_zero_when_no_rolled_scores(self, client):
-        body = client.get("/step/5").data.decode("utf-8")
+        body = client.get("/step/4").data.decode("utf-8")
         assert 'id="roll-confirmed-input"' in body
         assert 'value="0"' in body
 
@@ -140,7 +142,7 @@ class TestStep5ConstantInjection:
                     "ability_method": "random_roll",
                 }
                 sess["rolled_scores"] = [17, 15, 14, 13, 10, 8]
-            body = c.get("/step/5").data.decode("utf-8")
+            body = c.get("/step/4").data.decode("utf-8")
         assert 'value="1"' in body
 
 
@@ -167,7 +169,7 @@ class TestRandomRollRoundTrip:
             **{f"score_{ab}": str(v) for ab, v in self.ASSIGNED.items()},
             **{f"flex_{ab}": "0" for ab in ["str", "dex", "con", "int", "wis", "cha"]},
         }
-        resp = c.post("/step/5", data=form_data, follow_redirects=False)
+        resp = c.post("/step/4", data=form_data, follow_redirects=False)
         assert resp.status_code == 302, f"Step 5 POST should redirect, got {resp.status_code}"
         return c
 
@@ -180,9 +182,9 @@ class TestRandomRollRoundTrip:
             )
 
     def test_step5_get_after_back_nav_serves_rolled_scores(self):
-        """GET /step/5 after returning from step 6 should inject ROLLED_SCORES into page."""
+        """GET /step/4 after returning from step 5 should inject ROLLED_SCORES into page."""
         c = self._session_after_step5_submit()
-        body = c.get("/step/5").data.decode("utf-8")
+        body = c.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
 
         m = re.search(r"const ROLLED_SCORES\s*=\s*(\[[^\]]+\]);", script)
@@ -194,7 +196,7 @@ class TestRandomRollRoundTrip:
 
     def test_step5_get_after_back_nav_has_random_roll_method(self):
         c = self._session_after_step5_submit()
-        body = c.get("/step/5").data.decode("utf-8")
+        body = c.get("/step/4").data.decode("utf-8")
         script = _get_constants_script(body)
         m = re.search(r'const SAVED_METHOD\s*=\s*"([^"]+)"', script)
         assert m and m.group(1) == "random_roll"
@@ -208,5 +210,5 @@ class TestRandomRollRoundTrip:
             **{f"score_{ab}": str(v) for ab, v in self.ASSIGNED.items()},
             **{f"flex_{ab}": "0" for ab in ["str", "dex", "con", "int", "wis", "cha"]},
         }
-        resp = c.post("/step/5", data=form_data, follow_redirects=False)
+        resp = c.post("/step/4", data=form_data, follow_redirects=False)
         assert resp.status_code == 302, "Re-submit after back-nav should succeed"

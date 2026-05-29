@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Step 4: Choose a Background{% endblock %}
+{% block title %}Step 3: Choose a Background{% endblock %}
 
 {% block content %}
 <div class="wizard-card">
-  <h1 class="step-heading">Step 4: Choose a Background</h1>
+  <h1 class="step-heading">Step 3: Choose a Background</h1>
   <p class="step-intro">
     Your background is what your character did before becoming an adventurer —
     a soldier, a scholar, a criminal, and more.
     It gives your character skills and a special ability.
   </p>
 
-  <form method="post" action="{{ url_for('step', n=4) }}" novalidate>
+  <form method="post" action="{{ url_for('step', n=3) }}" novalidate>
 
     <div class="field {% if errors.background %}field-error{% endif %}">
       <label for="background">Background <span class="required" aria-hidden="true">*</span></label>

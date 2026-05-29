@@ -3,12 +3,18 @@ ui/app.py — Flask wizard for the OtG D&D character generator.
 Run from project root:  flask --app ui/app run --debug
 
 Routes:
-  GET/POST /            → step 1 (character basics)
-  GET/POST /step/<n>    → steps 2-7
+  GET      /            → redirects to /step/1
+  GET/POST /step/<n>    → steps 1-7
   POST     /generate/pdf  → graphic PDF download
   POST     /generate/html → accessible HTML download
   POST     /generate/txt  → plain text download
   GET      /restart       → clear session and restart
+
+Step order:
+  1: Species         4: Ability Scores
+  2: Class & Level   5: Equipment & Spells
+  3: Background      6: Character Basics (name/pronouns)
+                     7: Review & Download
 """
 from __future__ import annotations
 
@@ -56,12 +62,12 @@ _client = Open5eClient(sources=["srd-2014"])
 TOTAL_STEPS = 7
 
 STEP_NAMES = {
-    1: "Character Basics",
-    2: "Species",
-    3: "Class and Level",
-    4: "Background",
-    5: "Ability Scores",
-    6: "Equipment and Spells",
+    1: "Species",
+    2: "Class and Level",
+    3: "Background",
+    4: "Ability Scores",
+    5: "Equipment and Spells",
+    6: "Character Basics",
     7: "Review and Download",
 }
 
@@ -194,10 +200,7 @@ def _step_ctx(n: int) -> dict:
         "total_steps":  TOTAL_STEPS,
         "step_name":    STEP_NAMES[n],
         "char":         _char_data(),
-        "prev_url": (
-            url_for("index")         if n == 2 else
-            url_for("step", n=n - 1) if n > 2  else None
-        ),
+        "prev_url":     url_for("step", n=n - 1) if n > 1 else None,
     }
 
 
@@ -326,57 +329,42 @@ def _get_backgrounds() -> list[dict]:
     return _backgrounds_cache
 
 
-# ── Step 1: Character Basics ──────────────────────────────────────────────────
+# ── Entry point ───────────────────────────────────────────────────────────────
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def index():
-    errors = {}
-    if request.method == "POST":
-        name     = request.form.get("name", "").strip()
-        pronouns = request.form.get("pronouns", "").strip()
-
-        if not name:
-            errors["name"] = "Please enter a character name."
-
-        if not errors:
-            _save({"name": name, "pronouns": pronouns})
-            return redirect(url_for("step", n=2))
-
-    ctx = _step_ctx(1)
-    ctx["errors"] = errors
-    return render_template("step1_basics.html", **ctx)
+    return redirect(url_for("step", n=1))
 
 
-# ── Steps 2-7 dispatcher ─────────────────────────────────────────────────────
+# ── Steps 1-7 dispatcher ─────────────────────────────────────────────────────
 
 @app.route("/step/<int:n>", methods=["GET", "POST"])
 def step(n: int):
-    if not 2 <= n <= TOTAL_STEPS:
-        return redirect(url_for("index"))
+    if not 1 <= n <= TOTAL_STEPS:
+        return redirect(url_for("step", n=1))
 
     data = _char_data()
     # Guard: must have completed each prior step
     guards = [
-        (2, "name"),
-        (3, "species"),
-        (4, "char_class"),
-        (5, "background"),
-        (6, "ability_scores"),
-        (7, "ability_scores"),   # step 6 sets nothing new in session
+        (2, "species"),
+        (3, "char_class"),
+        (4, "background"),
+        (5, "ability_scores"),
+        (6, "ability_scores"),  # step 5 (equipment) writes nothing new to session
+        (7, "name"),
     ]
     for req_step, req_key in guards:
         if n >= req_step and not data.get(req_key):
-            return redirect(url_for("index" if req_step == 2 else "step",
-                                    **({} if req_step == 2 else {"n": req_step - 1})))
+            return redirect(url_for("step", n=req_step - 1))
 
-    handlers = {2: _step2, 3: _step3, 4: _step4,
-                5: _step5, 6: _step6, 7: _step7}
+    handlers = {1: _step1, 2: _step2, 3: _step3,
+                4: _step4, 5: _step5, 6: _step6, 7: _step7}
     return handlers[n](data)
 
 
-# ── Step 2: Species ───────────────────────────────────────────────────────────
+# ── Step 1: Species ───────────────────────────────────────────────────────────
 
-def _step2(data: dict):
+def _step1(data: dict):
     errors = {}
     species_list = _get_species()
 
@@ -386,21 +374,21 @@ def _step2(data: dict):
             errors["species"] = "Please select a species."
         if not errors:
             _save({"species": chosen})
-            return redirect(url_for("step", n=3))
+            return redirect(url_for("step", n=2))
 
-    ctx = _step_ctx(2)
+    ctx = _step_ctx(1)
     ctx.update({
         "errors":       errors,
         "species_list": species_list,
         "species_json": json.dumps({s["name"]: s for s in species_list}),
         "selected":     data.get("species", ""),
     })
-    return render_template("step2_species.html", **ctx)
+    return render_template("step1_species.html", **ctx)
 
 
-# ── Step 3: Class and Level ───────────────────────────────────────────────────
+# ── Step 2: Class and Level ───────────────────────────────────────────────────
 
-def _step3(data: dict):
+def _step2(data: dict):
     errors = {}
     classes_list = _get_classes()
 
@@ -420,9 +408,9 @@ def _step3(data: dict):
 
         if not errors:
             _save({"char_class": cls.lower(), "level": level_int})
-            return redirect(url_for("step", n=4))
+            return redirect(url_for("step", n=3))
 
-    ctx = _step_ctx(3)
+    ctx = _step_ctx(2)
     ctx.update({
         "errors":       errors,
         "classes_list": classes_list,
@@ -431,12 +419,12 @@ def _step3(data: dict):
         "sel_level":    data.get("level", 1),
         "level_range":  range(1, 6),
     })
-    return render_template("step3_class.html", **ctx)
+    return render_template("step2_class.html", **ctx)
 
 
-# ── Step 4: Background ────────────────────────────────────────────────────────
+# ── Step 3: Background ────────────────────────────────────────────────────────
 
-def _step4(data: dict):
+def _step3(data: dict):
     errors = {}
     bg_list = _get_backgrounds()
 
@@ -446,9 +434,9 @@ def _step4(data: dict):
             errors["background"] = "Please select a background."
         if not errors:
             _save({"background": chosen})
-            return redirect(url_for("step", n=5))
+            return redirect(url_for("step", n=4))
 
-    ctx = _step_ctx(4)
+    ctx = _step_ctx(3)
     ctx.update({
         "errors":           errors,
         "bg_list":          bg_list,
@@ -456,12 +444,12 @@ def _step4(data: dict):
         "selected":         data.get("background", ""),
         "selected_desc":    next((b for b in bg_list if b["name"] == data.get("background")), {}),
     })
-    return render_template("step4_background.html", **ctx)
+    return render_template("step3_background.html", **ctx)
 
 
-# ── Step 5: Ability Scores ────────────────────────────────────────────────────
+# ── Step 4: Ability Scores ────────────────────────────────────────────────────
 
-def _step5(data: dict):
+def _step4(data: dict):
     errors: dict = {}
     method = data.get("ability_method") or "standard_array"
     raw: dict[str, int] = {}
@@ -575,7 +563,7 @@ def _step5(data: dict):
             # Do NOT pop rolled_scores here — user may click Back from step 6
             # and the pool must still be present for the restored UI and
             # re-validation.  Session is only fully cleared on /restart.
-            return redirect(url_for("step", n=6))
+            return redirect(url_for("step", n=5))
     else:
         method = session.get("pending_method") or method
 
@@ -606,7 +594,7 @@ def _step5(data: dict):
     if fixed_excl:
         racial_bonuses["fixed_bonus_abilities"] = fixed_excl
 
-    ctx = _step_ctx(5)
+    ctx = _step_ctx(4)
     ctx.update({
         "errors":            errors,
         "method":            method,
@@ -626,14 +614,14 @@ def _step5(data: dict):
         "saved_asi":         asi_slots,
         "saved_flex":        saved_flex,
     })
-    return render_template("step5_abilities.html", **ctx)
+    return render_template("step4_abilities.html", **ctx)
 
 
-# ── Step 6: Equipment and Spells ──────────────────────────────────────────────
+# ── Step 5: Equipment and Spells ──────────────────────────────────────────────
 
-def _step6(data: dict):
+def _step5(data: dict):
     if request.method == "POST":
-        return redirect(url_for("step", n=7))
+        return redirect(url_for("step", n=6))
 
     char_obj  = None
     error_msg = None
@@ -660,7 +648,7 @@ def _step6(data: dict):
 
     is_caster = data.get("char_class", "").lower() in CASTER_CLASSES
 
-    ctx = _step_ctx(6)
+    ctx = _step_ctx(5)
     ctx.update({
         "error_msg":  error_msg,
         "eq_items":   eq_items,
@@ -673,7 +661,27 @@ def _step6(data: dict):
         "spell_attack":   getattr(char_obj, "spell_attack_bonus", 0),
         "is_caster":  is_caster,
     })
-    return render_template("step6_equipment.html", **ctx)
+    return render_template("step5_equipment.html", **ctx)
+
+
+# ── Step 6: Character Basics ──────────────────────────────────────────────────
+
+def _step6(data: dict):
+    errors = {}
+    if request.method == "POST":
+        name     = request.form.get("name", "").strip()
+        pronouns = request.form.get("pronouns", "").strip()
+
+        if not name:
+            errors["name"] = "Please enter a character name."
+
+        if not errors:
+            _save({"name": name, "pronouns": pronouns})
+            return redirect(url_for("step", n=7))
+
+    ctx = _step_ctx(6)
+    ctx["errors"] = errors
+    return render_template("step6_basics.html", **ctx)
 
 
 # ── Step 7: Review and Download ───────────────────────────────────────────────
@@ -788,7 +796,7 @@ def roll_scores():
 @app.route("/restart")
 def restart():
     session.clear()
-    return redirect(url_for("index"))
+    return redirect(url_for("step", n=1))
 
 
 if __name__ == "__main__":

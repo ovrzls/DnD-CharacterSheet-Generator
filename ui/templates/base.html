@@ -36,15 +36,15 @@
         <div class="progress-fill" style="width:{{ ((current_step / total_steps) * 100)|int }}%"></div>
       </div>
       {% set step_labels = {
-        1: "Character basics", 2: "Species", 3: "Class", 4: "Background",
-        5: "Ability scores", 6: "Equipment & spells", 7: "Review & download"
+        1: "Species", 2: "Class", 3: "Background", 4: "Ability scores",
+        5: "Equipment & spells", 6: "Character basics", 7: "Review & download"
       } %}
       <ol class="progress-steps" aria-label="Wizard steps">
         {% for i in range(1, total_steps + 1) %}
         {% set slabel = step_labels.get(i, "Step " ~ i) %}
         <li class="ps-dot{%- if i < current_step %} ps-done{%- elif i == current_step %} ps-active{%- else %} ps-future{%- endif %}">
           {%- if i < current_step %}
-          <a href="{{ url_for('index') if i == 1 else url_for('step', n=i) }}"
+          <a href="{{ url_for('step', n=i) }}"
              class="ps-link"
              aria-label="Go back to step {{ i }}: {{ slabel }}"
              title="{{ slabel }}"><span aria-hidden="true">✓</span></a>

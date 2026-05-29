@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Step 2: Choose a Species{% endblock %}
+{% block title %}Step 1: Choose a Species{% endblock %}
 
 {% block content %}
 <div class="wizard-card">
-  <h1 class="step-heading">Step 2: Choose a Species</h1>
+  <h1 class="step-heading">Step 1: Choose a Species</h1>
   <p class="step-intro">
     Your species (also called race) is the kind of creature your character is —
     human, elf, dwarf, and more. Each species has different traits.
   </p>
 
-  <form method="post" action="{{ url_for('step', n=2) }}" novalidate>
+  <form method="post" action="{{ url_for('step', n=1) }}" novalidate>
 
     <div class="field {% if errors.species %}field-error{% endif %}">
       <label for="species">Species <span class="required" aria-hidden="true">*</span></label>
@@ -48,9 +48,11 @@
     </div>
 
     <div class="form-actions">
+      {% if prev_url %}
       <a href="{{ prev_url }}" class="btn btn-secondary">
         <span aria-hidden="true">←</span> Back
       </a>
+      {% endif %}
       <button type="submit" class="btn btn-primary">
         Next: Choose Class
         <span aria-hidden="true"> →</span>

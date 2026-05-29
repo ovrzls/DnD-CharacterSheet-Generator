@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Step 6: Equipment and Spells{% endblock %}
+{% block title %}Step 5: Equipment and Spells{% endblock %}
 
 {% block content %}
 <div class="wizard-card">
-  <h1 class="step-heading">Step 6: Equipment and Spells</h1>
+  <h1 class="step-heading">Step 5: Equipment and Spells</h1>
   <p class="step-intro">
     Based on your class and ability scores, your character has been given
     starting equipment and — if you chose a spellcasting class — a set of spells.
@@ -100,7 +100,7 @@
   </section>
   {% endif %}
 
-  <form method="post" action="{{ url_for('step', n=6) }}">
+  <form method="post" action="{{ url_for('step', n=5) }}">
     <div class="form-actions">
       <a href="{{ prev_url }}" class="btn btn-secondary">
         <span aria-hidden="true">←</span> Back

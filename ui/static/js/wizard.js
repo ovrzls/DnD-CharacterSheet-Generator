@@ -86,7 +86,7 @@ function trackUsed() {
   if (!selects.length) return;
 
   // Build availability counts from window.SCORE_POOL.
-  // window.SCORE_POOL is set by the inline <script> in step5_abilities.html
+  // window.SCORE_POOL is set by the inline <script> in step4_abilities.html
   // and mutated by rollScores(); using window. ensures cross-file visibility.
   const poolCount = {};
   const pool = window.SCORE_POOL;

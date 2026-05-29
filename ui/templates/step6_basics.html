@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Step 6: Character Basics{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+  <h1 class="step-heading">Step 6: Character Basics</h1>
+  <p class="step-intro">
+    Almost there! Give your character a name and, optionally, some pronouns.
+  </p>
+
+  <form method="post" action="{{ url_for('step', n=6) }}" novalidate>
+
+    <div class="field {% if errors.name %}field-error{% endif %}">
+      <label for="name">Character Name <span class="required" aria-hidden="true">*</span></label>
+      <div class="name-input-group">
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value="{{ char.name or '' }}"
+          autocomplete="off"
+          aria-required="true"
+          aria-describedby="{% if errors.name %}name-err {% endif %}name-hint"
+          {% if errors.name %}aria-invalid="true"{% endif %}
+          class="text-input"
+        >
+        <button type="button"
+                id="suggest-name-btn"
+                class="btn-suggest-name"
+                aria-label="Suggest a random character name">
+          ✨ Suggest a name
+        </button>
+      </div>
+      {% if errors.name %}
+      <span id="name-err" class="error-msg" role="alert">{{ errors.name }}</span>
+      {% endif %}
+      <span id="name-hint" class="field-hint">The name of the character in the story</span>
+    </div>
+
+    <div class="field">
+      <label for="pronouns">Pronouns</label>
+      <input
+        type="text"
+        id="pronouns"
+        name="pronouns"
+        value="{{ char.pronouns or '' }}"
+        autocomplete="off"
+        placeholder="e.g. she/her, he/him, they/them"
+        class="text-input"
+      >
+      <span class="field-hint">Optional — pronouns for this character</span>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ prev_url }}" class="btn btn-secondary">
+        <span aria-hidden="true">←</span> Back
+      </a>
+      <button type="submit" class="btn btn-primary">
+        Next: Review &amp; Download
+        <span aria-hidden="true"> →</span>
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/names.js') }}"></script>
+<script>
+  const CURRENT_SPECIES = {{ (char.species or '') | tojson }};
+
+  document.getElementById('suggest-name-btn').addEventListener('click', function () {
+    const name  = suggestName(CURRENT_SPECIES);
+    const input = document.getElementById('name');
+    const hint  = document.getElementById('name-hint');
+    input.value = name;
+    input.focus();
+    hint.textContent = name + ' has been suggested. You can keep it or type your own.';
+    setTimeout(function () {
+      hint.textContent = 'The name of the character in the story';
+    }, 4000);
+  });
+</script>
+{% endblock %}

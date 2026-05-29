@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Step 5: Ability Scores{% endblock %}
+{% block title %}Step 4: Ability Scores{% endblock %}
 
 {% block content %}
 <div class="wizard-card">
-  <h1 class="step-heading">Step 5: Ability Scores</h1>
+  <h1 class="step-heading">Step 4: Ability Scores</h1>
   <p class="step-intro">
     Ability scores define your character's core traits — strength, agility,
     endurance, intellect, perception, and personality. Choose a generation method
@@ -22,7 +22,7 @@
   </div>
   {% endif %}
 
-  <form method="post" action="{{ url_for('step', n=5) }}" novalidate id="ability-form">
+  <form method="post" action="{{ url_for('step', n=4) }}" novalidate id="ability-form">
 
     {# Tracks which method the user has chosen #}
     <input type="hidden" name="ability_method" id="ability-method-input" value="{{ method }}">

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Step 3: Choose a Class{% endblock %}
+{% block title %}Step 2: Choose a Class{% endblock %}
 
 {% block content %}
 <div class="wizard-card">
-  <h1 class="step-heading">Step 3: Choose a Class and Level</h1>
+  <h1 class="step-heading">Step 2: Choose a Class and Level</h1>
   <p class="step-intro">
     Your class is your character's main job or skill set —
     fighter, wizard, rogue, and more. This determines what you can do in the game.
     For this prototype the highest level available is 5.
   </p>
 
-  <form method="post" action="{{ url_for('step', n=3) }}" novalidate>
+  <form method="post" action="{{ url_for('step', n=2) }}" novalidate>
 
     <div class="field {% if errors.char_class %}field-error{% endif %}">
       <label for="char_class">Class <span class="required" aria-hidden="true">*</span></label>
