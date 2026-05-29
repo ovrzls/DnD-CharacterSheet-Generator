@@ -103,7 +103,7 @@ def generate_text_sheet(char: Character) -> str:
         f"  NAME:    {char.name:<26} LEVEL: {char.level}",
         f"  CLASS:   {char.char_class.title():<26} HIT DIE: {char.level}{char.hit_dice}",
         f"  SPECIES: {(char.race or '—').title():<26} PROF BONUS: {_sign(prof)}",
-        f"  PLAYER:  {(char.player_name or '—'):<26} BACKGROUND: {(char.background or '—').title()}",
+        f"  BACKGROUND: {(char.background or '—').title()}",
     ]))
     lines.append("")
 

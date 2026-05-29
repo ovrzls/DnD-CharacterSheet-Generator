@@ -5,7 +5,7 @@
 <div class="wizard-card">
   <h1 class="step-heading">Step 1: Character Basics</h1>
   <p class="step-intro">
-    Let's start with the basics. Who is this character, and who is playing them?
+    Let's start with the basics. Give your character a name and, optionally, some pronouns.
   </p>
 
   <form method="post" action="{{ url_for('index') }}" novalidate>
@@ -26,37 +26,6 @@
       <span id="name-err" class="error-msg" role="alert">{{ errors.name }}</span>
       {% endif %}
       <span class="field-hint">The name of the character in the story</span>
-    </div>
-
-    <div class="field {% if errors.player_name %}field-error{% endif %}">
-      <label for="player_name">Player Name <span class="required" aria-hidden="true">*</span></label>
-      <input
-        type="text"
-        id="player_name"
-        name="player_name"
-        value="{{ char.player_name or '' }}"
-        autocomplete="name"
-        aria-required="true"
-        {% if errors.player_name %}aria-describedby="player-err" aria-invalid="true"{% endif %}
-        class="text-input"
-      >
-      {% if errors.player_name %}
-      <span id="player-err" class="error-msg" role="alert">{{ errors.player_name }}</span>
-      {% endif %}
-      <span class="field-hint">The person controlling this character</span>
-    </div>
-
-    <div class="field">
-      <label for="facilitator_name">Facilitator / DM Name</label>
-      <input
-        type="text"
-        id="facilitator_name"
-        name="facilitator_name"
-        value="{{ char.facilitator_name or '' }}"
-        autocomplete="off"
-        class="text-input"
-      >
-      <span class="field-hint">Optional — the person running the game</span>
     </div>
 
     <div class="field">

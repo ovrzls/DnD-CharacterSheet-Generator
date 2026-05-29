@@ -288,7 +288,6 @@ def generate_html_sheet(char: Character) -> str:
     passive_ins = 10 + wis_mod + (prof if ins_prof else 0)
 
     char_name    = h(char.name)
-    player_name  = h(char.player_name or "—")
     char_class   = h(char.char_class.title())
     race         = h(char.race.title() if char.race else "—")
     background   = h(char.background.title() if char.background else "—")
@@ -308,7 +307,6 @@ def generate_html_sheet(char: Character) -> str:
       <h1 id="char-name">{char_name}</h1>
 
       <dl aria-label="Character identity">
-        <dt>Player</dt>   <dd>{player_name}</dd>
         <dt>Class</dt>    <dd>{char_class} — Level {char.level}</dd>
         <dt>Species</dt>  <dd>{race}</dd>
         <dt>Background</dt><dd>{background}</dd>

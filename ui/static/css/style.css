@@ -120,6 +120,14 @@ header[role="banner"] {
 }
 .ps-done   { background: rgba(255,255,255,.5); color: #004d4e; }
 .ps-active { background: #D4006A; color: #fff; }
+.ps-future { background: rgba(255,255,255,.1); color: rgba(255,255,255,.4); }
+.ps-done .ps-link {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; border-radius: 50%;
+  text-decoration: none; color: inherit; cursor: pointer;
+}
+.ps-done .ps-link:hover { background-color: rgba(0,105,106,0.15); }
+.ps-done .ps-link:focus-visible { outline: 2px solid #00696A; outline-offset: 2px; }
 
 /* ── Main layout ──────────────────────────────────────────── */
 main {

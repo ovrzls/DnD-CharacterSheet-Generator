@@ -25,7 +25,6 @@ def client():
         with c.session_transaction() as sess:
             sess["character"] = {
                 "name": "Test Hero",
-                "player_name": "Tester",
                 "species": "Half-Orc",
                 "char_class": "fighter",
                 "level": 4,
@@ -81,7 +80,7 @@ class TestStep5ConstantInjection:
         with flask_app.test_client() as c:
             with c.session_transaction() as sess:
                 sess["character"] = {
-                    "name": "T", "player_name": "T",
+                    "name": "T",
                     "species": "Human", "char_class": "wizard",
                     "level": 1, "background": "Sage",
                 }
@@ -97,7 +96,7 @@ class TestStep5ConstantInjection:
         with flask_app.test_client() as c:
             with c.session_transaction() as sess:
                 sess["character"] = {
-                    "name": "T", "player_name": "T",
+                    "name": "T",
                     "species": "Half-Elf", "char_class": "sorcerer",
                     "level": 1, "background": "Sage",
                 }
@@ -135,7 +134,7 @@ class TestStep5ConstantInjection:
         with flask_app.test_client() as c:
             with c.session_transaction() as sess:
                 sess["character"] = {
-                    "name": "T", "player_name": "T",
+                    "name": "T",
                     "species": "Half-Orc", "char_class": "fighter",
                     "level": 4, "background": "Soldier",
                     "ability_method": "random_roll",
@@ -156,7 +155,7 @@ class TestRandomRollRoundTrip:
         c = flask_app.test_client()
         with c.session_transaction() as sess:
             sess["character"] = {
-                "name": "T", "player_name": "T",
+                "name": "T",
                 "species": "Half-Orc", "char_class": "fighter",
                 "level": 1, "background": "Soldier",
             }

@@ -162,7 +162,6 @@ def _build_char(*, equipment: bool = True, spells: bool = True) -> Character:
     )
     char = Character(
         name=data.get("name", "Unnamed Hero"),
-        player_name=data.get("player_name", ""),
         pronouns=data.get("pronouns", "").strip(),
         char_class=data.get("char_class", "fighter").lower(),
         race=data.get("species", ""),
@@ -323,19 +322,14 @@ def _get_backgrounds() -> list[dict]:
 def index():
     errors = {}
     if request.method == "POST":
-        name      = request.form.get("name", "").strip()
-        player    = request.form.get("player_name", "").strip()
-        facilitator = request.form.get("facilitator_name", "").strip()
-        pronouns  = request.form.get("pronouns", "").strip()
+        name     = request.form.get("name", "").strip()
+        pronouns = request.form.get("pronouns", "").strip()
 
         if not name:
             errors["name"] = "Please enter a character name."
-        if not player:
-            errors["player_name"] = "Please enter the player's name."
 
         if not errors:
-            _save({"name": name, "player_name": player,
-                   "facilitator_name": facilitator, "pronouns": pronouns})
+            _save({"name": name, "pronouns": pronouns})
             return redirect(url_for("step", n=2))
 
     ctx = _step_ctx(1)
