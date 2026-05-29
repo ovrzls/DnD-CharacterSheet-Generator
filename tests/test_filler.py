@@ -56,7 +56,7 @@ class TestPage1Identity:
 
     def test_class_and_level(self):
         v = character_to_field_values(_make_fighter(level=3))
-        assert v["page1"]["char_class"] == "fighter"
+        assert v["page1"]["char_class"] == "Fighter"
         assert v["page1"]["level"] == "3"
 
     def test_inspiration_on(self):
@@ -329,36 +329,136 @@ class TestPage2FeaturesAndMagic:
         v = character_to_field_values(char)
         assert v["page2"]["features_traits"] == ""
 
-    def test_magic_cantrips_listed(self):
+    def test_non_caster_magic_shows_no_spellcasting(self):
+        char = _make_fighter()
+        v = character_to_field_values(char)
+        assert v["page2"]["magic_abilities"] == "No spellcasting"
+
+    def test_caster_has_spell_stats(self):
+        char = _make_wizard()
+        v = character_to_field_values(char)
+        # Wizard lv3, INT 16 → mod +3, prof +2 → atk +5, dc 13
+        assert "spell_stats" in v["page2"]
+        assert "+5" in v["page2"]["spell_stats"]
+        assert "13" in v["page2"]["spell_stats"]
+
+    def test_caster_has_cantrips_header(self):
+        char = _make_wizard()
+        v = character_to_field_values(char)
+        assert v["page2"]["cantrips_header"] == "Cantrips (At Will)"
+
+    def test_caster_cantrips_list(self):
         char = _make_wizard()
         char.always_available = [
             SpellEntry(level=0, name="Fire Bolt"),
             SpellEntry(level=0, name="Prestidigitation"),
         ]
         v = character_to_field_values(char)
-        assert "Fire Bolt" in v["page2"]["magic_abilities"]
+        assert "Fire Bolt" in v["page2"]["cantrips_list"]
+        assert "Prestidigitation" in v["page2"]["cantrips_list"]
 
-    def test_magic_spells_listed(self):
+    def test_caster_level1_header_has_slots(self):
+        char = _make_wizard()  # level 3 → 4 level-1 slots
+        v = character_to_field_values(char)
+        hdr = v["page2"]["spells_level_1_header"]
+        assert "1st" in hdr
+        assert hdr.count("[ ]") == 4
+
+    def test_caster_level1_spell_list(self):
         char = _make_wizard()
         char.spells = [SpellEntry(level=1, name="Magic Missile")]
         v = character_to_field_values(char)
-        assert "Magic Missile" in v["page2"]["magic_abilities"]
+        assert "Magic Missile" in v["page2"]["spells_level_1_list"]
 
-    def test_magic_spell_attack_shown(self):
+    def test_caster_level2_header_has_slots(self):
+        char = _make_wizard()  # level 3 → 2 level-2 slots
+        v = character_to_field_values(char)
+        hdr = v["page2"]["spells_level_2_header"]
+        assert "2nd" in hdr
+        assert hdr.count("[ ]") == 2
+
+    def test_caster_no_magic_abilities_key(self):
         char = _make_wizard()
-        char.spell_attack_bonus = 5
-        char.spell_save_dc = 13
         v = character_to_field_values(char)
-        assert "+5" in v["page2"]["magic_abilities"]
-        assert "13" in v["page2"]["magic_abilities"]
+        # Casters do NOT produce the magic_abilities key
+        assert "magic_abilities" not in v["page2"]
 
-    def test_magic_empty_for_martial(self):
+
+class TestPronouns:
+    def test_pronouns_passthrough(self):
         char = _make_fighter()
-        char.always_available = []
-        char.spells = []
-        char.spell_attack_bonus = 0
+        char.pronouns = "he/him"
         v = character_to_field_values(char)
-        assert v["page2"]["magic_abilities"] == ""
+        assert v["page1"]["pronouns"] == "he/him"
+
+    def test_pronouns_they_them(self):
+        char = _make_fighter()
+        char.pronouns = "they/them"
+        v = character_to_field_values(char)
+        assert v["page1"]["pronouns"] == "they/them"
+
+    def test_pronouns_xe_xem(self):
+        char = _make_fighter()
+        char.pronouns = "xe/xem"
+        v = character_to_field_values(char)
+        assert v["page1"]["pronouns"] == "xe/xem"
+
+    def test_pronouns_empty_by_default(self):
+        char = _make_fighter()
+        v = character_to_field_values(char)
+        assert v["page1"]["pronouns"] == ""
+
+    def test_pronouns_whitespace_stripped(self):
+        char = _make_fighter()
+        char.pronouns = "  she/her  "
+        v = character_to_field_values(char)
+        assert v["page1"]["pronouns"] == "she/her"
+
+
+class TestProficienciesFormatted:
+    def test_armor_category_label(self):
+        char = _make_fighter()
+        char.armor_proficiencies = ["Light", "Medium"]
+        v = character_to_field_values(char)
+        assert "Armor: Light, Medium" in v["page1"]["proficiencies_text"]
+
+    def test_weapons_category_label(self):
+        char = _make_fighter()
+        char.weapon_proficiencies = ["Simple", "Martial"]
+        v = character_to_field_values(char)
+        assert "Weapons: Simple, Martial" in v["page1"]["proficiencies_text"]
+
+    def test_languages_category_label(self):
+        char = _make_fighter()
+        char.languages = ["Common", "Dwarvish"]
+        v = character_to_field_values(char)
+        assert "Languages: Common, Dwarvish" in v["page1"]["proficiencies_text"]
+
+    def test_each_category_on_own_line(self):
+        char = _make_fighter()
+        char.armor_proficiencies = ["Light"]
+        char.languages = ["Common"]
+        # Clear weapon/tool to keep it simple
+        char.weapon_proficiencies = []
+        char.tool_proficiencies = []
+        v = character_to_field_values(char)
+        txt = v["page1"]["proficiencies_text"]
+        assert "\n" in txt
+        lines = txt.split("\n")
+        assert any("Armor" in l for l in lines)
+        assert any("Languages" in l for l in lines)
+
+    def test_empty_categories_omitted(self):
+        char = _make_fighter()
+        char.armor_proficiencies = []
+        char.weapon_proficiencies = []
+        char.tool_proficiencies = ["Herbalism Kit"]
+        char.languages = []
+        v = character_to_field_values(char)
+        txt = v["page1"]["proficiencies_text"]
+        assert "Tools: Herbalism Kit" in txt
+        assert "Armor:" not in txt
+        assert "Languages:" not in txt
 
 
 # ---------------------------------------------------------------------------

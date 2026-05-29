@@ -76,6 +76,7 @@ class Character:
     # Identity
     name: str = "Unnamed Hero"
     player_name: str = ""
+    pronouns: str = ""
     level: int = 1               # 1-5 for prototype
 
     # Core choices
@@ -149,6 +150,9 @@ class Character:
 
     # Passive perception
     passive_perception: int = 10
+
+    # Wealth
+    gold: int = 0
 
     # Meta
     experience_points: int = 0

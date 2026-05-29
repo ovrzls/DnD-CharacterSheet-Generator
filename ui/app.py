@@ -31,7 +31,11 @@ from engine.ability_scores import (POINT_BUY_BUDGET, POINT_BUY_COSTS,
                                    validate_point_buy)
 from engine.character import AbilityScores, Character
 from engine.equipment import get_standard_equipment
-from engine.rules import (CASTER_CLASSES, SPELLCASTING_ABILITY, derive_stats)
+from engine.rules import (CASTER_CLASSES, SPELLCASTING_ABILITY, OPTIMAL_ABILITY_ORDER,
+                          RACE_ABILITY_BONUSES, derive_stats,
+                          FLEXIBLE_BONUS_COUNTS, FLEXIBLE_BONUS_AMOUNT,
+                          FIXED_BONUS_ABILITIES, ASI_LEVELS,
+                          FIGHTER_ASI_LEVELS, ROGUE_ASI_LEVELS)
 from engine.spells import build_spells_for_character
 from pdf.filler import fill_otg_sheet
 from pdf.html_sheet import generate_html_sheet
@@ -70,7 +74,19 @@ ABILITY_LABELS = {
     "wis": "Wisdom",
     "cha": "Charisma",
 }
-
+ABILITY_HINTS = {
+    "str": "Physical power and carrying capacity",
+    "dex": "Speed, agility, and coordination",
+    "con": "Health and stamina",
+    "int": "Memory, reasoning, and knowledge",
+    "wis": "Awareness, intuition, and insight",
+    "cha": "Confidence, charm, and force of personality",
+}
+# Short → long ability key map for racial bonus JSON output
+_AB_LONG = {
+    "str": "strength", "dex": "dexterity", "con": "constitution",
+    "int": "intelligence", "wis": "wisdom", "cha": "charisma",
+}
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _sign(n: int) -> str:
@@ -114,19 +130,40 @@ def _save(updates: dict) -> None:
 
 def _build_char(*, equipment: bool = True, spells: bool = True) -> Character:
     """Reconstruct a Character from session data."""
-    data  = _char_data()
-    sc    = data.get("ability_scores", {})
+    data    = _char_data()
+    sc      = data.get("ability_scores", {})
+    species = (data.get("species") or "").lower().strip()
+    racial  = RACE_ABILITY_BONUSES.get(species, {})
+    flex    = data.get("flex_bonuses", {})
+
+    asi_bonus: dict[str, int] = {}
+    for slot in data.get("asi_slots", []):
+        if not slot.get("type"):
+            continue
+        if slot["type"] == "double" and slot.get("ab1"):
+            k = slot["ab1"]
+            asi_bonus[k] = asi_bonus.get(k, 0) + 2
+        elif slot["type"] == "split":
+            for k in (slot.get("ab1") or "", slot.get("ab2") or ""):
+                if k:
+                    asi_bonus[k] = asi_bonus.get(k, 0) + 1
+
+    def _s(ab_key: str) -> int:
+        return (int(sc.get(ab_key, 10)) + racial.get(ab_key, 0)
+                + flex.get(ab_key, 0) + asi_bonus.get(ab_key, 0))
+
     ab = AbilityScores(
-        strength=int(sc.get("str", 10)),
-        dexterity=int(sc.get("dex", 10)),
-        constitution=int(sc.get("con", 10)),
-        intelligence=int(sc.get("int", 10)),
-        wisdom=int(sc.get("wis", 10)),
-        charisma=int(sc.get("cha", 10)),
+        strength=     _s("str"),
+        dexterity=    _s("dex"),
+        constitution= _s("con"),
+        intelligence= _s("int"),
+        wisdom=       _s("wis"),
+        charisma=     _s("cha"),
     )
     char = Character(
         name=data.get("name", "Unnamed Hero"),
         player_name=data.get("player_name", ""),
+        pronouns=data.get("pronouns", "").strip(),
         char_class=data.get("char_class", "fighter").lower(),
         race=data.get("species", ""),
         background=data.get("background", ""),
@@ -237,8 +274,9 @@ def _get_backgrounds() -> list[dict]:
     if _backgrounds_cache is not None:
         return _backgrounds_cache
     try:
-        raw = _client.get_backgrounds()
-        _backgrounds_cache = sorted([
+        # Use a source-filter-free client — srd-2014 only contains Acolyte
+        raw = Open5eClient().get_backgrounds()
+        parsed = sorted([
             {
                 "name":         b.get("name", ""),
                 "desc":         _first_para(b.get("desc", "")),
@@ -247,12 +285,34 @@ def _get_backgrounds() -> list[dict]:
             }
             for b in raw if b.get("name")
         ], key=lambda x: x["name"])
+        if parsed:
+            _backgrounds_cache = parsed
+            return _backgrounds_cache
     except Exception:
+        pass
+    # Fallback: reached when API fails or returns empty results
+    if not _backgrounds_cache:
         _backgrounds_cache = [
-            {"name": "Acolyte",  "desc": "You grew up in a religious community.", "feature": "Shelter of the Faithful", "feature_desc": ""},
-            {"name": "Criminal", "desc": "You have a history outside the law.",   "feature": "Criminal Contact",        "feature_desc": ""},
-            {"name": "Folk Hero","desc": "You rose from humble origins.",         "feature": "Rustic Hospitality",      "feature_desc": ""},
-            {"name": "Soldier",  "desc": "You trained as a professional warrior.", "feature": "Military Rank",          "feature_desc": ""},
+            {"name": "Acolyte",               "desc": "You grew up in a religious community.",             "feature": "Shelter of the Faithful",   "feature_desc": ""},
+            {"name": "Charlatan",             "desc": "You excelled at deceiving others for profit.",     "feature": "False Identity",            "feature_desc": ""},
+            {"name": "City Watch",            "desc": "You served as a protector of an urban settlement.", "feature": "Watcher's Eye",            "feature_desc": ""},
+            {"name": "Criminal",              "desc": "You have a history outside the law.",              "feature": "Criminal Contact",          "feature_desc": ""},
+            {"name": "Entertainer",           "desc": "You thrive in front of an audience.",              "feature": "By Popular Demand",         "feature_desc": ""},
+            {"name": "Far Traveler",          "desc": "You come from a distant land.",                    "feature": "All Eyes on You",           "feature_desc": ""},
+            {"name": "Folk Hero",             "desc": "You rose from humble origins.",                    "feature": "Rustic Hospitality",        "feature_desc": ""},
+            {"name": "Guild Artisan",         "desc": "You are a skilled member of a guild.",             "feature": "Guild Membership",          "feature_desc": ""},
+            {"name": "Haunted One",           "desc": "You have been touched by dark forces.",            "feature": "Heart of Darkness",         "feature_desc": ""},
+            {"name": "Hermit",                "desc": "You lived in seclusion for a period of time.",     "feature": "Discovery",                 "feature_desc": ""},
+            {"name": "Mercenary Veteran",     "desc": "You have fought for coin across the land.",        "feature": "Mercenary Life",            "feature_desc": ""},
+            {"name": "Noble",                 "desc": "You come from a family of wealth and privilege.",  "feature": "Position of Privilege",     "feature_desc": ""},
+            {"name": "Outlander",             "desc": "You grew up in the wilds, far from civilization.", "feature": "Wanderer",                  "feature_desc": ""},
+            {"name": "Sage",                  "desc": "You spent years learning the lore of the world.", "feature": "Researcher",                "feature_desc": ""},
+            {"name": "Sailor",                "desc": "You sailed on a seagoing vessel for years.",       "feature": "Ship's Passage",            "feature_desc": ""},
+            {"name": "Soldier",               "desc": "You trained as a professional warrior.",           "feature": "Military Rank",             "feature_desc": ""},
+            {"name": "Spy",                   "desc": "You worked in the shadows, gathering secrets.",    "feature": "Criminal Contact",          "feature_desc": ""},
+            {"name": "Urban Bounty Hunter",   "desc": "You tracked down criminals for a living.",        "feature": "Ear to the Ground",         "feature_desc": ""},
+            {"name": "Urchin",                "desc": "You grew up on the streets alone.",               "feature": "City Secrets",              "feature_desc": ""},
+            {"name": "Uthgardt Tribe Member", "desc": "You grew up among the Uthgardt barbarian tribes.", "feature": "Uthgardt Heritage",        "feature_desc": ""},
         ]
     return _backgrounds_cache
 
@@ -398,27 +458,59 @@ def _step4(data: dict):
 
 def _step5(data: dict):
     errors: dict = {}
-    method = data.get("ability_method", "standard_array")
+    method = data.get("ability_method") or "standard_array"
+    raw: dict[str, int] = {}
+    flex_assignments: dict[str, int] = {}
+
+    # Compute once — needed in both POST and GET
+    species    = (data.get("species")   or "").lower().strip()
+    char_class = (data.get("char_class") or "fighter").lower()
+    level      = int(data.get("level", 1))
+
+    if char_class == "fighter":
+        _asi_lvls = FIGHTER_ASI_LEVELS
+    elif char_class == "rogue":
+        _asi_lvls = ROGUE_ASI_LEVELS
+    else:
+        _asi_lvls = ASI_LEVELS
+    asi_slots_earned = sum(1 for lv in _asi_lvls if lv <= level)
+
+    # Preserved across POST errors so user inputs are not lost
+    asi_slots: list[dict] = list(data.get("asi_slots", []))
 
     if request.method == "POST":
-        action = request.form.get("action", "save")
-        method = request.form.get("ability_method", "standard_array")
+        method = request.form.get("ability_method", "")
 
-        if action == "roll":
-            rolled = sorted(generate_scores("random_4d6_drop1"), reverse=True)
-            session["rolled_scores"] = rolled
-            session["pending_method"] = method
-            session.modified = True
-            return redirect(url_for("step", n=5))
-
-        # Parse submitted scores
-        raw: dict[str, int] = {}
+        # Parse submitted ability scores
         for ab in ABILITIES:
             try:
                 raw[ab] = int(request.form.get(f"score_{ab}", 0))
             except (ValueError, TypeError):
-                errors[f"score_{ab}"] = "Please enter a number."
-                raw[ab] = 10
+                errors[f"score_{ab}"] = "Please enter a valid number."
+                raw[ab] = 0
+
+        # Parse flexible racial bonus assignments
+        for ab in ABILITIES:
+            try:
+                flex_assignments[ab] = int(request.form.get(f"flex_{ab}", 0))
+            except (ValueError, TypeError):
+                flex_assignments[ab] = 0
+
+        # Parse ASI slot assignments (always parsed so inputs survive POST errors)
+        asi_slots = []
+        for i in range(asi_slots_earned):
+            asi_type = request.form.get(f"asi_{i}_type", "").strip()
+            ab1      = request.form.get(f"asi_{i}_ab1",  "").strip()
+            ab2      = request.form.get(f"asi_{i}_ab2",  "").strip()
+            if asi_type == "split" and ab1 and not ab2:
+                errors[f"asi_{i}"] = (
+                    f"Improvement {i + 1}: please choose a second ability "
+                    "or switch to '+2 to one ability'."
+                )
+            asi_slots.append({"type": asi_type, "ab1": ab1, "ab2": ab2})
+
+        if not method:
+            errors["method"] = "Please select a generation method."
 
         if not errors:
             if method == "standard_array":
@@ -428,56 +520,103 @@ def _step5(data: dict):
                         + ", ".join(str(s) for s in sorted(STANDARD_ARRAY, reverse=True))
                     )
             elif method == "random_roll":
-                rolled = session.get("rolled_scores", list(STANDARD_ARRAY))
-                if sorted(raw.values()) != sorted(rolled):
+                rolled_pool = session.get("rolled_scores")
+                if not rolled_pool:
+                    errors["scores"] = "Please roll your scores before continuing."
+                elif sorted(raw.values()) != sorted(rolled_pool):
                     errors["scores"] = "Please assign each rolled score exactly once."
             elif method == "point_buy":
-                valid, _, msg = validate_point_buy({
-                    "strength":     raw["str"],
-                    "dexterity":    raw["dex"],
-                    "constitution": raw["con"],
-                    "intelligence": raw["int"],
-                    "wisdom":       raw["wis"],
-                    "charisma":     raw["cha"],
-                })
-                if not valid:
-                    errors["scores"] = msg
+                range_errors = []
+                for ab_key, ab_label in ABILITY_LABELS.items():
+                    score = raw[ab_key]
+                    if score < POINT_BUY_MIN or score > POINT_BUY_MAX:
+                        range_errors.append(
+                            f"{ab_label} ({score}) must be {POINT_BUY_MIN}–{POINT_BUY_MAX}"
+                        )
+                if range_errors:
+                    errors["scores"] = "Out of range — " + "; ".join(range_errors)
+                else:
+                    valid, _, msg = validate_point_buy({
+                        "strength":     raw["str"],
+                        "dexterity":    raw["dex"],
+                        "constitution": raw["con"],
+                        "intelligence": raw["int"],
+                        "wisdom":       raw["wis"],
+                        "charisma":     raw["cha"],
+                    })
+                    if not valid:
+                        errors["scores"] = msg
+            else:
+                errors["scores"] = "Please select Standard Array, Point Buy, or Random Roll."
+
+            # Validate flexible racial bonus completeness
+            flex_required = FLEXIBLE_BONUS_COUNTS.get(species, 0)
+            if flex_required > 0 and not errors.get("scores"):
+                total_flex = sum(flex_assignments.values())
+                if total_flex != flex_required:
+                    errors["scores"] = (
+                        f"Please assign all {flex_required} flexible racial "
+                        f"bonus point{'s' if flex_required > 1 else ''}."
+                    )
 
         if not errors:
-            _save({"ability_scores": raw, "ability_method": method})
+            _save({
+                "ability_scores": raw,
+                "ability_method": method,
+                "flex_bonuses":   flex_assignments,
+                "asi_slots":      asi_slots,
+            })
             session.pop("rolled_scores", None)
-            session.pop("pending_method", None)
             return redirect(url_for("step", n=6))
     else:
-        # GET: restore pending method if set
-        method = session.get("pending_method", method)
+        method = session.get("pending_method") or method
 
     rolled = session.get("rolled_scores")
-    if method == "random_roll" and rolled:
-        pool = rolled
-    elif method == "standard_array":
-        pool = list(STANDARD_ARRAY)
-    else:
-        pool = None
 
-    saved_scores = data.get("ability_scores", {})
+    # Preserve just-submitted values on POST error
+    if errors and raw:
+        saved_scores = raw
+        saved_flex   = flex_assignments
+    else:
+        saved_scores = data.get("ability_scores", {})
+        saved_flex   = data.get("flex_bonuses", {})
+
+    # Build JS-facing racial_bonuses dict
+    _raw_racial    = dict(RACE_ABILITY_BONUSES.get(species, {}))
+    racial_bonuses: dict = {}
+    for k, v in _raw_racial.items():
+        if k in _AB_LONG:
+            racial_bonuses[_AB_LONG[k]] = v
+        # skip metadata keys (flexible / flexible_amount) — rebuilt from constants below
+
+    flex_count = FLEXIBLE_BONUS_COUNTS.get(species, 0)
+    if flex_count:
+        racial_bonuses["flexible"]        = flex_count
+        racial_bonuses["flexible_amount"] = FLEXIBLE_BONUS_AMOUNT.get(species, 1)
+
+    fixed_excl = FIXED_BONUS_ABILITIES.get(species, [])
+    if fixed_excl:
+        racial_bonuses["fixed_bonus_abilities"] = fixed_excl
 
     ctx = _step_ctx(5)
     ctx.update({
-        "errors":         errors,
-        "method":         method,
-        "pool":           pool,
-        "rolled_scores":  rolled,
-        "standard_array": list(STANDARD_ARRAY),
-        "pb_budget":      POINT_BUY_BUDGET,
-        "pb_min":         POINT_BUY_MIN,
-        "pb_max":         POINT_BUY_MAX,
-        "pb_costs_json":  json.dumps(POINT_BUY_COSTS),
-        "abilities":      ABILITIES,
-        "ability_labels": ABILITY_LABELS,
-        "saved_scores":   saved_scores,
-        "sign":           _sign,
-        "mod":            _mod,
+        "errors":            errors,
+        "method":            method,
+        "rolled_scores":     rolled,
+        "standard_array":    list(STANDARD_ARRAY),
+        "pb_budget":         POINT_BUY_BUDGET,
+        "pb_min":            POINT_BUY_MIN,
+        "pb_max":            POINT_BUY_MAX,
+        "pb_costs":          POINT_BUY_COSTS,
+        "abilities":         ABILITIES,
+        "ability_labels":    ABILITY_LABELS,
+        "ability_hints":     ABILITY_HINTS,
+        "saved_scores":      saved_scores,
+        "racial_bonuses":    racial_bonuses,
+        "char_class":        char_class,
+        "asi_slots_earned":  asi_slots_earned,
+        "saved_asi":         asi_slots,
+        "saved_flex":        saved_flex,
     })
     return render_template("step5_abilities.html", **ctx)
 
@@ -616,6 +755,26 @@ def generate_txt():
                          mimetype="text/plain; charset=utf-8")
     except Exception as exc:
         return f"Error generating text sheet: {exc}", 500
+
+
+@app.route("/api/roll-scores")
+def api_roll_scores():
+    """Legacy GET endpoint — kept for backward compatibility."""
+    scores = sorted(generate_scores("random_4d6_drop1"), reverse=True)
+    session["rolled_scores"]  = scores
+    session["pending_method"] = "random_roll"
+    session.modified = True
+    return {"scores": scores}
+
+
+@app.route("/roll_scores", methods=["POST"])
+def roll_scores():
+    """Roll 4d6 drop-lowest × 6 with a minimum of 8 per score. Returns JSON."""
+    from engine.ability_scores import roll_4d6_drop_lowest
+    scores = sorted([max(8, roll_4d6_drop_lowest()) for _ in range(6)], reverse=True)
+    session["rolled_scores"] = scores
+    session.modified = True
+    return {"scores": scores}
 
 
 @app.route("/restart")

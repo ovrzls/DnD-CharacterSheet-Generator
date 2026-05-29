@@ -297,6 +297,11 @@ main {
   font-weight: 700;
   font-size: .95rem;
 }
+.pool-chip.chip-used {
+  background: #aaa;
+  text-decoration: line-through;
+  opacity: .6;
+}
 .score-table { border-collapse: collapse; width: 100%; max-width: 480px; }
 .score-table th {
   background: #00696A;
@@ -322,6 +327,118 @@ main {
 .pb-budget-label { font-size: .95rem; margin-bottom: .5rem; }
 .roll-prompt { padding: .75rem 0; }
 .roll-prompt p { margin-bottom: .75rem; color: #444; }
+
+/* ── Step 5 rebuild ──────────────────────────────────────── */
+.step-section-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #00696A;
+  margin: 1.25rem 0 .6rem;
+}
+.method-section { margin-bottom: .5rem; }
+.phase2-heading { margin-top: 1.75rem; }
+.phase2-heading:focus { outline: 3px solid #00696A; outline-offset: 3px; }
+
+/* Error summary block */
+.error-summary {
+  background: #fff0f0;
+  border: 2px solid #c00;
+  border-radius: 6px;
+  padding: .75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.error-summary:focus { outline: 3px solid #c00; outline-offset: 3px; }
+.error-summary-heading { font-size: .95rem; color: #c00; margin-bottom: .35rem; }
+.error-list { margin: 0; padding-left: 1.25rem; font-size: .9rem; color: #c00; }
+
+/* Ability assignment table */
+.ability-table-wrap { overflow-x: auto; margin-top: .75rem; }
+.ability-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 480px;
+}
+.ability-table th {
+  background: #00696A;
+  color: #fff;
+  text-align: left;
+  padding: .45rem .65rem;
+  font-size: .85rem;
+  white-space: nowrap;
+}
+.ability-table td {
+  padding: .5rem .65rem;
+  border-bottom: 1px solid #e0ecec;
+  vertical-align: middle;
+}
+.ability-name-td { min-width: 160px; }
+.ability-label { display: block; font-weight: 600; font-size: .95rem; }
+.ability-hint  { display: block; font-size: .78rem; color: #666; line-height: 1.3; margin-top: .1rem; }
+.val-cell   { min-width: 120px; }
+.bonus-cell { text-align: center; min-width: 60px; }
+.score-cell { text-align: center; min-width: 55px; font-weight: 600; }
+.mod-cell   { text-align: center; min-width: 70px; font-weight: 700; }
+.mod-pos    { color: #00696A; }
+.mod-neg    { color: #c0392b; }
+
+/* Point Buy stepper */
+.pb-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+.pb-btn {
+  background: #00696A;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pb-btn:disabled { background: #ccc; cursor: not-allowed; }
+.pb-btn:hover:not(:disabled), .pb-btn:focus:not(:disabled) { background: #004d4e; }
+.pb-btn:focus { outline: 3px solid #00696A; outline-offset: 2px; }
+.pb-score {
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 26px;
+  text-align: center;
+}
+.over-budget { color: #c0392b; }
+.pb-budget-label { font-size: .95rem; margin-bottom: .6rem; font-weight: 600; }
+
+/* Pool header (label + reroll button side by side) */
+.pool-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .3rem;
+}
+.pool-header .score-pool-label { margin-bottom: 0; }
+
+/* Bonus column */
+.bonus-fixed { display: block; text-align: center; font-weight: 600; color: #333; }
+.flex-select {
+  padding: .2rem .4rem;
+  font-size: .85rem;
+  font-family: inherit;
+  border: 2px solid #aaa;
+  border-radius: 4px;
+}
+
+/* Placeholder text in value cell before rolling */
+.val-pending { color: #888; font-size: .85rem; font-style: italic; }
+
+/* Roll prompt text */
+.roll-desc { color: #555; font-size: .95rem; margin-bottom: .75rem; }
 
 /* ── Review sections ──────────────────────────────────────── */
 .review-section {

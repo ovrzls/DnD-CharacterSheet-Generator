@@ -162,12 +162,23 @@ def generate_text_sheet(char: Character) -> str:
     ])
     lines.append("")
 
-    # Proficiencies
-    prof_parts = (char.armor_proficiencies + char.weapon_proficiencies
-                  + char.tool_proficiencies + char.languages)
-    if prof_parts:
+    # Proficiencies — categorized
+    _txt_cats: list[str] = []
+    if char.armor_proficiencies:
+        _txt_cats += _wrap("Armor: " + ", ".join(char.armor_proficiencies), indent=4)
+    if char.weapon_proficiencies:
+        _txt_cats += _wrap("Weapons: " + ", ".join(char.weapon_proficiencies), indent=4)
+    if char.tool_proficiencies:
+        _txt_cats += _wrap("Tools: " + ", ".join(char.tool_proficiencies), indent=4)
+    if char.languages:
+        _txt_cats += _wrap("Languages: " + ", ".join(char.languages), indent=4)
+    _senses_txt = getattr(char, 'senses', None)
+    if _senses_txt:
+        _sv = ", ".join(_senses_txt) if isinstance(_senses_txt, list) else str(_senses_txt)
+        _txt_cats += _wrap("Senses: " + _sv, indent=4)
+    if _txt_cats:
         lines.append("  PROFICIENCIES & LANGUAGES")
-        lines += _wrap(", ".join(prof_parts))
+        lines += _txt_cats
         lines.append("")
 
     # Inventory
@@ -176,6 +187,9 @@ def generate_text_sheet(char: Character) -> str:
         for item in char.equipment:
             qty = f"{item.quantity}× " if item.quantity > 1 else ""
             lines.append(f"  • {qty}{item.name}")
+        gold_val = getattr(char, "gold", 0)
+        if gold_val:
+            lines.append(f"  Gold: {gold_val} gp")
         lines.append("")
 
     # ── PAGE 2 ───────────────────────────────────────────────────────────────
@@ -222,24 +236,69 @@ def generate_text_sheet(char: Character) -> str:
             lines.append(f"  • {feat.name}")
         lines.append("")
 
-    if char.always_available or char.spells:
-        lines.append("  MAGIC & SPECIAL ABILITIES")
-        if char.spellcasting_ability:
-            lines.append(f"  Spellcasting Ability: {char.spellcasting_ability}")
-            lines.append(
-                f"  Spell Attack Bonus: {_sign(char.spell_attack_bonus)}"
-                f"    Spell Save DC: {char.spell_save_dc}"
-            )
-        if char.spell_slots:
-            slots = "  Spell Slots: " + ", ".join(
-                f"L{k}:{v}" for k, v in sorted(char.spell_slots.items())
-            )
-            lines.append(slots)
-        if char.always_available:
-            lines += _wrap("Cantrips: " + ", ".join(s.name for s in char.always_available))
-        if char.spells:
-            lines += _wrap("Spells:   " + ", ".join(s.name for s in char.spells))
+    lines.append("  MAGIC & SPECIAL ABILITIES")
+    if char.sheet_variant != "caster":
+        lines.append("  No spellcasting.")
+        if char.features:
+            lines.append("  CLASS FEATURES")
+            for feat in char.features:
+                lines.append(f"  • {feat.name}")
         lines.append("")
+    else:
+        # Spell stats header
+        _ab_score_map_txt = {
+            "strength": ab.strength, "dexterity": ab.dexterity,
+            "constitution": ab.constitution, "intelligence": ab.intelligence,
+            "wisdom": ab.wisdom, "charisma": ab.charisma,
+        }
+        _spell_mod_txt = _mod(_ab_score_map_txt.get((char.spellcasting_ability or "").lower(), 10))
+        lines.append(
+            f"  Modifier: {_sign(_spell_mod_txt)}  |  "
+            f"Attack Bonus: {_sign(char.spell_attack_bonus)}  |  "
+            f"Save DC: {char.spell_save_dc}"
+        )
+        lines.append("")
+
+        # Build 4-column layout: cantrips | lvl1 | lvl2 | lvl3 (etc.)
+        COL_W = 22
+        INDENT = "  "
+
+        def _ordinal_txt(n: int) -> str:
+            return f"{n}{({1:'st',2:'nd',3:'rd'}).get(n,'th')}"
+
+        # Collect columns: each is (header_line, [spell_names])
+        _cols: list[tuple[str, list[str]]] = []
+
+        # Cantrips
+        _cantrip_names = [s.name for s in char.always_available]
+        _cols.append(("CANTRIPS (AT WILL)", _cantrip_names))
+
+        # Spell levels
+        for _lvl, _slots in sorted(char.spell_slots.items()):
+            if _slots <= 0:
+                continue
+            _boxes = " ".join("[ ]" for _ in range(min(int(_slots), 9)))
+            _hdr = f"{_ordinal_txt(_lvl).upper()} LEVEL {_boxes}"
+            _level_spells = [s.name for s in char.spells if s.level == _lvl]
+            _cols.append((_hdr, _level_spells))
+
+        # Render columns in rows of 4
+        for _row_start in range(0, len(_cols), 4):
+            _row_cols = _cols[_row_start:_row_start + 4]
+            # Header row
+            hdr_line = INDENT + "".join(
+                _col_hdr.ljust(COL_W) for _col_hdr, _ in _row_cols
+            )
+            lines.append(hdr_line)
+            # Spell rows
+            _max_spells = max((len(_sp) for _, _sp in _row_cols), default=0)
+            for _si in range(_max_spells):
+                row_line = INDENT + "".join(
+                    (_sp[_si] if _si < len(_sp) else "").ljust(COL_W)
+                    for _, _sp in _row_cols
+                )
+                lines.append(row_line)
+            lines.append("")
 
     lines.append("─" * W)
     lines.append("  Generated by Open the Gates Character Generator")

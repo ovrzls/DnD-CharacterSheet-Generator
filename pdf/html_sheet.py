@@ -64,6 +64,12 @@ tr:nth-child(even) td{background:#fff0f7}
 ul{padding-left:1.25rem}
 li{margin:.2rem 0;font-size:.95rem}
 
+/* Spell grid */
+.spell-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-top:.5rem}
+@media(min-width:600px){.spell-grid{grid-template-columns:repeat(4,1fr)}}
+.spell-col h3{font-size:.85rem;margin-bottom:.2rem}
+.slot-row{font-size:.8rem;color:#555;margin-bottom:.2rem}
+
 /* Print */
 @media print{
   body{background:#fff}
@@ -197,33 +203,81 @@ def generate_html_sheet(char: Character) -> str:
     else:
         features_html = '<p>No features recorded.</p>'
 
-    # Magic
-    magic_parts = []
-    if char.always_available:
-        names = ", ".join(h(s.name) for s in char.always_available)
-        magic_parts.append(f'<p><strong>Cantrips (always available):</strong> {names}</p>')
-    if char.spells:
-        names = ", ".join(h(s.name) for s in char.spells)
-        magic_parts.append(f'<p><strong>Spells:</strong> {names}</p>')
-    if char.spell_attack_bonus:
-        magic_parts.append(
-            f'<p><strong>Spell Attack Bonus:</strong> {_sign(char.spell_attack_bonus)}'
-            f'&nbsp;&nbsp;<strong>Spell Save DC:</strong> {char.spell_save_dc}</p>'
-        )
-    if char.spell_slots:
-        slots = ", ".join(f'Level {k}: {v}' for k, v in sorted(char.spell_slots.items()))
-        magic_parts.append(f'<p><strong>Spell Slots:</strong> {slots}</p>')
-    magic_section = (
-        f'<section class="page-back" aria-labelledby="magic-heading">'
-        f'<h2 id="magic-heading">Magic &amp; Special Abilities</h2>'
-        + "".join(magic_parts) +
-        '</section>'
-    ) if magic_parts else ''
+    # Magic — structured spell layout
+    def _ordinal_html(n: int) -> str:
+        return f"{n}{({1:'st',2:'nd',3:'rd'}).get(n,'th')}"
 
-    # Proficiencies text
-    prof_parts = (char.armor_proficiencies + char.weapon_proficiencies
-                  + char.tool_proficiencies + char.languages)
-    prof_text = h(", ".join(prof_parts)) if prof_parts else "None listed."
+    if char.sheet_variant == "caster":
+        _ab_score_map = {
+            "strength": ab.strength, "dexterity": ab.dexterity,
+            "constitution": ab.constitution, "intelligence": ab.intelligence,
+            "wisdom": ab.wisdom, "charisma": ab.charisma,
+        }
+        _spell_mod = _mod(_ab_score_map.get((char.spellcasting_ability or "").lower(), 10))
+        spell_stats_html = (
+            f'<p role="note" aria-label="Spellcasting stats">'
+            f'Modifier: {_sign(_spell_mod)} &nbsp;|&nbsp; '
+            f'Attack Bonus: {_sign(char.spell_attack_bonus)} &nbsp;|&nbsp; '
+            f'Save DC: {char.spell_save_dc}'
+            f'</p>'
+        )
+        # Cantrips column
+        _cantrip_items = "".join(f'<li>{h(s.name)}</li>' for s in char.always_available)
+        cantrips_col = (
+            '<div class="spell-col">'
+            '<h3>Cantrips (At Will)</h3>'
+            f'<ul>{_cantrip_items if _cantrip_items else "<li>—</li>"}</ul>'
+            '</div>'
+        )
+        # Spell level columns
+        spell_level_cols = ""
+        for _lvl, _slots in sorted(char.spell_slots.items()):
+            if _slots <= 0:
+                continue
+            _boxes = " ".join("☐" for _ in range(min(int(_slots), 9)))
+            _lvl_spells = [s for s in char.spells if s.level == _lvl]
+            _items = "".join(f'<li>{h(s.name)}</li>' for s in _lvl_spells)
+            spell_level_cols += (
+                f'<div class="spell-col" aria-label="{_ordinal_html(_lvl)} level spells">'
+                f'<h3>{h(_ordinal_html(_lvl))} Level</h3>'
+                f'<p class="slot-row">Slots: {_boxes}</p>'
+                f'<ul>{_items if _items else "<li>—</li>"}</ul>'
+                '</div>'
+            )
+        magic_section = (
+            '<section class="page-back" aria-labelledby="magic-heading">'
+            '<h2 id="magic-heading">Magic &amp; Special Abilities</h2>'
+            + spell_stats_html +
+            '<div class="spell-grid">'
+            + cantrips_col + spell_level_cols +
+            '</div>'
+            '</section>'
+        )
+    else:
+        _feat_list = "".join(f'<li>{h(f.name)}</li>' for f in char.features) if char.features else "<li>—</li>"
+        magic_section = (
+            '<section class="page-back" aria-labelledby="magic-heading">'
+            '<h2 id="magic-heading">Magic &amp; Special Abilities</h2>'
+            '<p>No spellcasting.</p>'
+            f'<ul aria-label="Class features">{_feat_list}</ul>'
+            '</section>'
+        )
+
+    # Proficiencies — categorized
+    _prof_cats: list[str] = []
+    if char.armor_proficiencies:
+        _prof_cats.append(f"<strong>Armor:</strong> {h(', '.join(char.armor_proficiencies))}")
+    if char.weapon_proficiencies:
+        _prof_cats.append(f"<strong>Weapons:</strong> {h(', '.join(char.weapon_proficiencies))}")
+    if char.tool_proficiencies:
+        _prof_cats.append(f"<strong>Tools:</strong> {h(', '.join(char.tool_proficiencies))}")
+    if char.languages:
+        _prof_cats.append(f"<strong>Languages:</strong> {h(', '.join(char.languages))}")
+    _senses_html = getattr(char, 'senses', None)
+    if _senses_html:
+        _sv = ', '.join(_senses_html) if isinstance(_senses_html, list) else str(_senses_html)
+        _prof_cats.append(f"<strong>Senses:</strong> {h(_sv)}")
+    prof_text = "<br>".join(_prof_cats) if _prof_cats else "None listed."
 
     # Passive scores
     wis_mod = _mod(ab.wisdom)
@@ -238,6 +292,7 @@ def generate_html_sheet(char: Character) -> str:
     char_class   = h(char.char_class.title())
     race         = h(char.race.title() if char.race else "—")
     background   = h(char.background.title() if char.background else "—")
+    gold_gp      = getattr(char, "gold", 0)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -316,6 +371,7 @@ def generate_html_sheet(char: Character) -> str:
 
       <h2>Equipment</h2>
       {equipment_html}
+      <p><strong>Gold:</strong> {gold_gp} gp</p>
 
       <h2>Features &amp; Traits</h2>
       {features_html}

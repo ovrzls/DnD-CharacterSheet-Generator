@@ -11,7 +11,9 @@ from engine.ability_scores import (
 from engine.rules import (
     derive_stats, select_sheet_variant, proficiency_bonus,
     ability_modifier, get_spell_slots, calc_max_hp,
-    get_hit_die, calc_spell_save_dc
+    get_hit_die, calc_spell_save_dc,
+    RACE_ABILITY_BONUSES, FLEXIBLE_BONUS_COUNTS, FLEXIBLE_BONUS_AMOUNT,
+    FIXED_BONUS_ABILITIES, ASI_LEVELS, FIGHTER_ASI_LEVELS, ROGUE_ASI_LEVELS,
 )
 
 
@@ -263,3 +265,60 @@ class TestAbilityScoreAssignment:
             scores = generate_scores("random_4d6_drop1")
             assert len(scores) == 6
             assert all(3 <= s <= 18 for s in scores)
+
+
+# ── Racial bonus structure ────────────────────────────────────────────────────
+
+class TestRacialBonuses:
+    def test_human_has_no_fixed_ability_keys(self):
+        ab_keys = {"str", "dex", "con", "int", "wis", "cha"}
+        assert not ab_keys.intersection(RACE_ABILITY_BONUSES["human"])
+
+    def test_human_flexible_slots(self):
+        assert FLEXIBLE_BONUS_COUNTS["human"] == 2
+        assert FLEXIBLE_BONUS_AMOUNT["human"] == 1
+
+    def test_half_elf_has_cha_fixed(self):
+        assert RACE_ABILITY_BONUSES["half-elf"]["cha"] == 2
+
+    def test_half_elf_flexible_slots(self):
+        assert FLEXIBLE_BONUS_COUNTS["half-elf"] == 2
+        assert FLEXIBLE_BONUS_AMOUNT["half-elf"] == 1
+
+    def test_half_elf_cha_excluded_from_flex(self):
+        assert "cha" in FIXED_BONUS_ABILITIES["half-elf"]
+
+    def test_dwarf_unchanged(self):
+        assert RACE_ABILITY_BONUSES["dwarf"] == {"con": 2}
+        assert "dwarf" not in FLEXIBLE_BONUS_COUNTS
+
+    def test_tiefling_unchanged(self):
+        assert RACE_ABILITY_BONUSES["tiefling"] == {"int": 1, "cha": 2}
+
+
+# ── ASI levels ────────────────────────────────────────────────────────────────
+
+class TestAsiLevels:
+    def _slots_at(self, level_list, level):
+        return sum(1 for lv in level_list if lv <= level)
+
+    def test_standard_class_no_asi_at_l3(self):
+        assert self._slots_at(ASI_LEVELS, 3) == 0
+
+    def test_standard_class_one_asi_at_l4(self):
+        assert self._slots_at(ASI_LEVELS, 4) == 1
+
+    def test_standard_class_two_asi_at_l8(self):
+        assert self._slots_at(ASI_LEVELS, 8) == 2
+
+    def test_fighter_two_asi_at_l6(self):
+        assert self._slots_at(FIGHTER_ASI_LEVELS, 6) == 2
+
+    def test_fighter_one_asi_at_l4(self):
+        assert self._slots_at(FIGHTER_ASI_LEVELS, 4) == 1
+
+    def test_rogue_three_asi_at_l10(self):
+        assert self._slots_at(ROGUE_ASI_LEVELS, 10) == 3
+
+    def test_rogue_one_asi_at_l4(self):
+        assert self._slots_at(ROGUE_ASI_LEVELS, 4) == 1

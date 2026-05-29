@@ -95,6 +95,289 @@ PACT_CASTERS = {"warlock"}
 # Proficiency bonus by level
 PROFICIENCY_BY_LEVEL = {1: 2, 2: 2, 3: 2, 4: 2, 5: 3}
 
+# Starting gold (GP) per class — PHB average
+STARTING_GOLD: dict[str, int] = {
+    "barbarian": 25,
+    "bard":      125,
+    "cleric":    125,
+    "druid":     25,
+    "fighter":   125,
+    "monk":      12,
+    "paladin":   125,
+    "ranger":    125,
+    "rogue":     100,
+    "sorcerer":  75,
+    "warlock":   100,
+    "wizard":    100,
+}
+
+# Armor proficiencies per class
+CLASS_ARMOR_PROFICIENCIES: dict[str, list[str]] = {
+    "barbarian": ["Light armor", "Medium armor", "Shields"],
+    "bard":      ["Light armor"],
+    "cleric":    ["Light armor", "Medium armor", "Shields"],
+    "druid":     ["Light armor", "Medium armor", "Shields"],
+    "fighter":   ["Light armor", "Medium armor", "Heavy armor", "Shields"],
+    "monk":      [],
+    "paladin":   ["Light armor", "Medium armor", "Heavy armor", "Shields"],
+    "ranger":    ["Light armor", "Medium armor", "Shields"],
+    "rogue":     ["Light armor"],
+    "sorcerer":  [],
+    "warlock":   ["Light armor"],
+    "wizard":    [],
+}
+
+# Weapon proficiencies per class
+CLASS_WEAPON_PROFICIENCIES: dict[str, list[str]] = {
+    "barbarian": ["Simple weapons", "Martial weapons"],
+    "bard":      ["Simple weapons", "Hand crossbows", "Longswords", "Rapiers", "Shortswords"],
+    "cleric":    ["Simple weapons"],
+    "druid":     ["Clubs", "Daggers", "Javelins", "Maces", "Quarterstaffs", "Scimitars", "Slings", "Spears"],
+    "fighter":   ["Simple weapons", "Martial weapons"],
+    "monk":      ["Simple weapons", "Shortswords"],
+    "paladin":   ["Simple weapons", "Martial weapons"],
+    "ranger":    ["Simple weapons", "Martial weapons"],
+    "rogue":     ["Simple weapons", "Hand crossbows", "Longswords", "Rapiers", "Shortswords"],
+    "sorcerer":  ["Daggers", "Darts", "Slings", "Quarterstaffs", "Light crossbows"],
+    "warlock":   ["Simple weapons"],
+    "wizard":    ["Daggers", "Darts", "Slings", "Quarterstaffs", "Light crossbows"],
+}
+
+# Tool proficiencies per class
+CLASS_TOOL_PROFICIENCIES: dict[str, list[str]] = {
+    "barbarian": [],
+    "bard":      ["Three musical instruments of your choice"],
+    "cleric":    [],
+    "druid":     ["Herbalism kit"],
+    "fighter":   [],
+    "monk":      ["One artisan's tool or musical instrument"],
+    "paladin":   [],
+    "ranger":    [],
+    "rogue":     ["Thieves' tools"],
+    "sorcerer":  [],
+    "warlock":   [],
+    "wizard":    [],
+}
+
+# Languages granted by background
+BACKGROUND_LANGUAGES: dict[str, list[str]] = {
+    "acolyte":       ["Two of your choice"],
+    "charlatan":     [],
+    "criminal":      [],
+    "entertainer":   [],
+    "folk hero":     [],
+    "guild artisan": ["One of your choice"],
+    "hermit":        ["One of your choice"],
+    "noble":         ["One of your choice"],
+    "outlander":     ["One of your choice"],
+    "sage":          ["Two of your choice"],
+    "sailor":        [],
+    "soldier":       [],
+    "spy":           [],
+    "urchin":        [],
+    "haunted one":   ["Two exotic languages of your choice"],
+    "far traveler":  ["One of your choice"],
+    "city watch":    ["Two of your choice"],
+    "mercenary veteran": [],
+    "urban bounty hunter": [],
+    "uthgardt tribe member": ["One of your choice"],
+}
+
+# Class features by level (name only — sheet is quick-reference)
+CLASS_FEATURES: dict[str, dict[int, list[str]]] = {
+    "barbarian": {
+        1: ["Rage (2/long rest)", "Unarmored Defense (CON)"],
+        2: ["Reckless Attack", "Danger Sense"],
+        3: ["Primal Path"],
+        4: ["Ability Score Improvement"],
+        5: ["Extra Attack", "Fast Movement"],
+    },
+    "bard": {
+        1: ["Bardic Inspiration (d6)", "Spellcasting"],
+        2: ["Jack of All Trades", "Song of Rest (d6)"],
+        3: ["Bard College", "Expertise"],
+        4: ["Ability Score Improvement"],
+        5: ["Bardic Inspiration (d8)", "Font of Inspiration"],
+    },
+    "cleric": {
+        1: ["Spellcasting", "Divine Domain"],
+        2: ["Channel Divinity (1/rest)", "Divine Domain Feature"],
+        3: [],
+        4: ["Ability Score Improvement"],
+        5: ["Destroy Undead (CR 1/2)"],
+    },
+    "druid": {
+        1: ["Druidic", "Spellcasting"],
+        2: ["Wild Shape (CR 1/4)", "Druid Circle"],
+        3: [],
+        4: ["Ability Score Improvement", "Wild Shape (CR 1/2)"],
+        5: ["Wild Shape (CR 1)"],
+    },
+    "fighter": {
+        1: ["Fighting Style", "Second Wind"],
+        2: ["Action Surge (1/rest)"],
+        3: ["Martial Archetype"],
+        4: ["Ability Score Improvement"],
+        5: ["Extra Attack"],
+    },
+    "monk": {
+        1: ["Unarmored Defense (WIS)", "Martial Arts"],
+        2: ["Ki (2 points/short rest)", "Unarmored Movement", "Flurry of Blows", "Patient Defense", "Step of the Wind"],
+        3: ["Monastic Tradition", "Deflect Missiles"],
+        4: ["Ability Score Improvement", "Slow Fall"],
+        5: ["Extra Attack", "Stunning Strike"],
+    },
+    "paladin": {
+        1: ["Divine Sense", "Lay on Hands (5 HP/long rest)"],
+        2: ["Fighting Style", "Spellcasting", "Divine Smite"],
+        3: ["Sacred Oath", "Divine Health"],
+        4: ["Ability Score Improvement"],
+        5: ["Extra Attack"],
+    },
+    "ranger": {
+        1: ["Favored Enemy", "Natural Explorer"],
+        2: ["Fighting Style", "Spellcasting"],
+        3: ["Ranger Archetype", "Primeval Awareness"],
+        4: ["Ability Score Improvement"],
+        5: ["Extra Attack"],
+    },
+    "rogue": {
+        1: ["Expertise", "Sneak Attack (1d6)", "Thieves' Cant"],
+        2: ["Cunning Action"],
+        3: ["Roguish Archetype", "Sneak Attack (2d6)"],
+        4: ["Ability Score Improvement"],
+        5: ["Uncanny Dodge", "Sneak Attack (3d6)"],
+    },
+    "sorcerer": {
+        1: ["Spellcasting", "Sorcerous Origin"],
+        2: ["Font of Magic", "Sorcery Points (2)"],
+        3: ["Metamagic (2 options)", "Sorcery Points (3)"],
+        4: ["Ability Score Improvement", "Sorcery Points (4)"],
+        5: ["Sorcery Points (5)"],
+    },
+    "warlock": {
+        1: ["Otherworldly Patron", "Pact Magic", "Eldritch Invocations (1)"],
+        2: ["Eldritch Invocations (2)"],
+        3: ["Pact Boon", "Eldritch Invocations (2)"],
+        4: ["Ability Score Improvement"],
+        5: ["Eldritch Invocations (3)"],
+    },
+    "wizard": {
+        1: ["Spellcasting", "Arcane Recovery"],
+        2: ["Arcane Tradition"],
+        3: [],
+        4: ["Ability Score Improvement"],
+        5: [],
+    },
+}
+
+# Optimal ability score order per class (highest first = best stat → gets 15)
+# Maps class → ordered list of ability keys matching STANDARD_ARRAY order
+OPTIMAL_ABILITY_ORDER: dict[str, list[str]] = {
+    "barbarian": ["str", "con", "dex", "wis", "cha", "int"],
+    "bard":      ["cha", "dex", "con", "int", "wis", "str"],
+    "cleric":    ["wis", "con", "str", "cha", "dex", "int"],
+    "druid":     ["wis", "con", "dex", "int", "cha", "str"],
+    "fighter":   ["str", "con", "dex", "wis", "cha", "int"],
+    "monk":      ["dex", "wis", "con", "str", "int", "cha"],
+    "paladin":   ["str", "cha", "con", "wis", "dex", "int"],
+    "ranger":    ["dex", "str", "wis", "con", "int", "cha"],
+    "rogue":     ["dex", "cha", "con", "int", "wis", "str"],
+    "sorcerer":  ["cha", "con", "dex", "int", "wis", "str"],
+    "warlock":   ["cha", "con", "dex", "int", "wis", "str"],
+    "wizard":    ["int", "con", "dex", "wis", "cha", "str"],
+}
+
+# Racial ability score bonuses {race_lower: {ability_key: bonus}}
+# Keys may include short ability keys (str/dex/etc.) and metadata keys
+# (flexible, flexible_amount).  Only short ability keys are used by _build_char.
+RACE_ABILITY_BONUSES: dict[str, dict] = {
+    "human":      {"flexible": 2, "flexible_amount": 1},
+    "elf":        {"dex": 2, "int": 1},
+    "high elf":   {"dex": 2, "int": 1},
+    "wood elf":   {"dex": 2, "wis": 1},
+    "dark elf":   {"dex": 2, "cha": 1},
+    "dwarf":      {"con": 2},
+    "hill dwarf": {"con": 2, "wis": 1},
+    "mountain dwarf": {"con": 2, "str": 2},
+    "halfling":   {"dex": 2},
+    "lightfoot halfling": {"dex": 2, "cha": 1},
+    "stout halfling": {"dex": 2, "con": 1},
+    "gnome":      {"int": 2},
+    "forest gnome": {"int": 2, "dex": 1},
+    "rock gnome": {"int": 2, "con": 1},
+    "half-elf":   {"cha": 2, "flexible": 2, "flexible_amount": 1},
+    "half-orc":   {"str": 2, "con": 1},
+    "tiefling":   {"int": 1, "cha": 2},
+    "dragonborn": {"str": 2, "cha": 1},
+}
+
+# Races that allow flexible bonus allocation (+N to player-chosen abilities)
+FLEXIBLE_BONUS_COUNTS: dict[str, int] = {
+    "human":    2,
+    "half-elf": 2,
+}
+
+# Bonus amount per flexible slot (always +1 in 5e SRD)
+FLEXIBLE_BONUS_AMOUNT: dict[str, int] = {
+    "human":    1,
+    "half-elf": 1,
+}
+
+# Abilities that already receive a fixed bonus and cannot also receive a flex slot
+FIXED_BONUS_ABILITIES: dict[str, list[str]] = {
+    "half-elf": ["cha"],
+}
+
+# Levels at which most classes gain an Ability Score Improvement
+ASI_LEVELS: list[int] = [4, 8, 12, 16, 19]
+
+# Fighter gains ASIs more frequently than other classes
+FIGHTER_ASI_LEVELS: list[int] = [4, 6, 8, 12, 14, 16, 19]
+
+# Rogue gains an additional ASI at level 10
+ROGUE_ASI_LEVELS: list[int] = [4, 8, 10, 12, 16, 18]
+
+# Default skill proficiencies granted by each class (2 iconic picks)
+CLASS_SKILLS: dict[str, list[str]] = {
+    "barbarian": ["Athletics", "Intimidation"],
+    "bard":      ["Deception", "Performance"],
+    "cleric":    ["History", "Religion"],
+    "druid":     ["Animal Handling", "Nature"],
+    "fighter":   ["Athletics", "Intimidation"],
+    "monk":      ["Acrobatics", "Stealth"],
+    "paladin":   ["Athletics", "Religion"],
+    "ranger":    ["Animal Handling", "Survival"],
+    "rogue":     ["Deception", "Stealth"],
+    "sorcerer":  ["Arcana", "Intimidation"],
+    "warlock":   ["Arcana", "Deception"],
+    "wizard":    ["Arcana", "History"],
+}
+
+# Fixed skill proficiencies granted by each background
+BACKGROUND_SKILLS: dict[str, list[str]] = {
+    "acolyte":            ["Insight", "Religion"],
+    "charlatan":          ["Deception", "Sleight of Hand"],
+    "criminal":           ["Deception", "Stealth"],
+    "entertainer":        ["Acrobatics", "Performance"],
+    "folk hero":          ["Animal Handling", "Survival"],
+    "guild artisan":      ["Insight", "Persuasion"],
+    "hermit":             ["Medicine", "Religion"],
+    "noble":              ["History", "Persuasion"],
+    "outlander":          ["Athletics", "Survival"],
+    "sage":               ["Arcana", "History"],
+    "sailor":             ["Athletics", "Perception"],
+    "soldier":            ["Athletics", "Intimidation"],
+    "spy":                ["Deception", "Stealth"],
+    "urchin":             ["Sleight of Hand", "Stealth"],
+    "haunted one":        ["Arcana", "Investigation"],
+    "far traveler":       ["Insight", "Perception"],
+    "city watch":         ["Athletics", "Insight"],
+    "mercenary veteran":  ["Athletics", "Persuasion"],
+    "urban bounty hunter":["Deception", "Stealth"],
+    "uthgardt tribe member": ["Athletics", "Survival"],
+}
+
 # All skills and their governing ability
 SKILL_ABILITIES = {
     "acrobatics":      "dexterity",
@@ -231,6 +514,46 @@ def derive_stats(character: Character) -> Character:
     character.saving_throw_proficiencies = list(
         SAVING_THROWS.get(cls, [])
     )
+
+    # Skill proficiencies from class + background (merge, deduplicate, preserve any
+    # proficiencies already set on the character — e.g. from the wizard flow)
+    bg_key = (character.background or "").lower().strip()
+    auto_skills = (
+        CLASS_SKILLS.get(cls, [])
+        + BACKGROUND_SKILLS.get(bg_key, [])
+    )
+    existing = set(character.skill_proficiencies)
+    for skill in auto_skills:
+        if skill not in existing:
+            character.skill_proficiencies.append(skill)
+            existing.add(skill)
+
+    # Armor proficiencies
+    if not character.armor_proficiencies:
+        character.armor_proficiencies = list(CLASS_ARMOR_PROFICIENCIES.get(cls, []))
+
+    # Weapon proficiencies
+    if not character.weapon_proficiencies:
+        character.weapon_proficiencies = list(CLASS_WEAPON_PROFICIENCIES.get(cls, []))
+
+    # Tool proficiencies
+    if not character.tool_proficiencies:
+        character.tool_proficiencies = list(CLASS_TOOL_PROFICIENCIES.get(cls, []))
+
+    # Languages from background
+    if not character.languages:
+        character.languages = list(BACKGROUND_LANGUAGES.get(bg_key, []))
+
+    # Starting gold
+    if not getattr(character, "gold", 0):
+        character.gold = STARTING_GOLD.get(cls, 0)
+
+    # Features & traits — collect all levels up to current
+    if not character.features:
+        from engine.character import FeatureEntry
+        for lvl in range(1, lvl + 1):
+            for feat_name in CLASS_FEATURES.get(cls, {}).get(lvl, []):
+                character.features.append(FeatureEntry(name=feat_name))
 
     # Passive perception
     has_perc = "perception" in [s.lower() for s in character.skill_proficiencies]
