@@ -5,7 +5,7 @@ Generates a single self-contained HTML file (inline CSS, no external deps).
 from __future__ import annotations
 from html import escape as h
 from engine.character import Character
-from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS
+from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS, get_character_features
 
 
 def _sign(n: int) -> str:
@@ -73,6 +73,11 @@ li{margin:.2rem 0;font-size:.95rem}
 @media(min-width:600px){.spell-grid{grid-template-columns:repeat(4,1fr)}}
 .spell-col h3{font-size:.85rem;margin-bottom:.2rem}
 .slot-row{font-size:.8rem;color:#555;margin-bottom:.2rem}
+
+/* Features list */
+.features-list{margin:.4rem 0 0}
+.features-list dt{font-weight:500;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;margin-top:.5rem}
+.features-list dd{font-size:.7rem;color:#444;margin-left:0;line-height:1.5}
 
 /* Print */
 @media print{
@@ -205,12 +210,21 @@ def generate_html_sheet(char: Character) -> str:
     else:
         equipment_html = '<p>No equipment recorded.</p>'
 
-    # Features
-    if char.features:
-        feat_items = "".join(f'<li>{h(f.name)}</li>' for f in char.features)
-        features_html = f'<ul aria-label="Features and traits">{feat_items}</ul>'
+    # Features (class + racial + background with descriptions)
+    char_features = get_character_features(char)
+    if char_features:
+        _feat_dl_rows = "".join(
+            f'<dt>{h(name)}</dt><dd>{h(desc)}</dd>'
+            for name, desc in char_features
+        )
+        features_dl = (
+            '<h3>Features &amp; Traits</h3>'
+            '<dl class="features-list" aria-label="Features and traits">'
+            + _feat_dl_rows +
+            '</dl>'
+        )
     else:
-        features_html = '<p>No features recorded.</p>'
+        features_dl = ""
 
     # Magic — structured spell layout
     def _ordinal_html(n: int) -> str:
@@ -260,15 +274,15 @@ def generate_html_sheet(char: Character) -> str:
             '<div class="spell-grid">'
             + cantrips_col + spell_level_cols +
             '</div>'
+            + features_dl +
             '</section>'
         )
     else:
-        _feat_list = "".join(f'<li>{h(f.name)}</li>' for f in char.features) if char.features else "<li>—</li>"
         magic_section = (
             '<section class="page-back" aria-labelledby="magic-heading">'
             '<h2 id="magic-heading">Magic &amp; Special Abilities</h2>'
             '<p>No spellcasting.</p>'
-            f'<ul aria-label="Class features">{_feat_list}</ul>'
+            + features_dl +
             '</section>'
         )
 
@@ -386,9 +400,6 @@ def generate_html_sheet(char: Character) -> str:
       <h2>Equipment</h2>
       {equipment_html}
       <p><strong>Gold:</strong> {gold_gp} gp</p>
-
-      <h2>Features &amp; Traits</h2>
-      {features_html}
     </section>
 
     {magic_section}

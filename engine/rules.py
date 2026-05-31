@@ -300,6 +300,301 @@ CLASS_FEATURES: dict[str, dict[int, list[str]]] = {
     },
 }
 
+# Class features with short descriptions for sheet output.
+# Tuple: (min_level, name, description).
+# Description may be a plain str or Callable[[int], str] for level-scaled text.
+CLASS_FEATURE_DETAILS = {
+    "barbarian": [
+        (1, "Rage",
+         lambda lvl: (
+             f"Advantage on STR checks/saves, +2 damage, resistance to physical damage. "
+             f"{max(2, min(6, lvl // 4 * 2 + 2))} rages/long rest."
+         )),
+        (2, "Reckless Attack",
+         "Advantage on first STR attack, attackers have advantage against you until your next turn."),
+        (3, "Danger Sense",
+         "Advantage on DEX saves against visible effects."),
+    ],
+    "bard": [
+        (1, "Bardic Inspiration",
+         "Give a creature a d6 to add to one ability check, attack, or save. CHA mod uses/rest."),
+        (2, "Jack of All Trades",
+         "Add half proficiency to ability checks you are not proficient in."),
+        (3, "Expertise",
+         "Double proficiency on two chosen skills."),
+    ],
+    "cleric": [
+        (1, "Divine Domain",
+         "Chosen domain grants bonus spells and features."),
+        (2, "Channel Divinity",
+         "Turn Undead or domain effect once/short rest."),
+    ],
+    "druid": [
+        (1, "Druidic",
+         "Secret language known only to druids."),
+        (2, "Wild Shape",
+         "Transform into a beast you have seen. CR 1/4 (no swim/fly) at level 2."),
+    ],
+    "fighter": [
+        (1, "Fighting Style",
+         "Chosen combat style grants a passive bonus."),
+        (1, "Second Wind",
+         "Bonus action: regain 1d10 + level HP once/rest."),
+        (2, "Action Surge",
+         "Take one additional action once/rest."),
+        (3, "Martial Archetype",
+         "Chosen archetype grants subclass features."),
+    ],
+    "monk": [
+        (1, "Unarmored Defense",
+         "AC = 10 + DEX mod + WIS mod without armor."),
+        (1, "Martial Arts",
+         "Use DEX for monk weapons, bonus unarmed strike."),
+        (2, "Ki",
+         lambda lvl: (
+             f"Spend ki points for Flurry, Patient Defense, or Step of the Wind. {lvl} ki points."
+         )),
+        (3, "Deflect Missiles",
+         "Reduce ranged hit damage by 1d10 + DEX mod + level."),
+    ],
+    "paladin": [
+        (1, "Divine Sense",
+         "Detect celestials, fiends, undead within 60 ft. 1 + CHA mod uses/long rest."),
+        (1, "Lay on Hands",
+         lambda lvl: f"Healing pool of {lvl * 5} HP. Cure disease/poison for 5 HP."),
+        (2, "Fighting Style",
+         "Chosen combat style grants a passive bonus."),
+        (2, "Divine Smite",
+         "Expend spell slot on hit: +2d8 radiant per slot level (max 5d8). +1d8 vs undead/fiends."),
+        (3, "Sacred Oath",
+         "Chosen oath grants Channel Divinity options and bonus spells."),
+    ],
+    "ranger": [
+        (1, "Favored Enemy",
+         "Advantage to track, recall info, learn language of chosen enemy type."),
+        (1, "Natural Explorer",
+         "Chosen terrain grants travel and tracking benefits."),
+        (2, "Fighting Style",
+         "Chosen combat style grants a passive bonus."),
+        (3, "Primeval Awareness",
+         "Expend spell slot to sense enemy types within 1 mile (6 miles in favored terrain)."),
+    ],
+    "rogue": [
+        (1, "Expertise",
+         "Double proficiency on two chosen skills."),
+        (1, "Sneak Attack",
+         lambda lvl: (
+             f"{(lvl + 1) // 2}d6 extra damage when you have advantage "
+             f"or an ally is adjacent to target."
+         )),
+        (1, "Thieves' Cant",
+         "Secret rogue language and signs."),
+        (2, "Cunning Action",
+         "Bonus action: Dash, Disengage, or Hide."),
+        (3, "Roguish Archetype",
+         "Chosen archetype grants subclass features."),
+    ],
+    "sorcerer": [
+        (1, "Sorcerous Origin",
+         "Chosen origin grants bonus spells and features."),
+        (2, "Font of Magic",
+         lambda lvl: (
+             f"{lvl * 2} sorcery points. Convert to spell slots or fuel metamagic."
+         )),
+        (3, "Metamagic",
+         "Choose 2 metamagic options to modify spells."),
+    ],
+    "warlock": [
+        (1, "Otherworldly Patron",
+         "Patron grants expanded spell list and features."),
+        (1, "Pact Magic",
+         lambda lvl: (
+             f"{min(2, 1 + lvl // 2)} spell slot(s), always highest level. Regain on short rest."
+         )),
+        (2, "Eldritch Invocations",
+         lambda lvl: f"Choose {(lvl + 1) // 2} invocations for permanent magical abilities."),
+    ],
+    "wizard": [
+        (1, "Spellbook",
+         "Contains your spells. Add 2 spells per level plus found scrolls."),
+        (1, "Arcane Recovery",
+         lambda lvl: (
+             f"Once/day after short rest: recover spell slots totaling up to "
+             f"{(lvl + 1) // 2} levels (max 5th level)."
+         )),
+        (2, "Arcane Tradition",
+         "Chosen tradition grants subclass features."),
+    ],
+}
+
+# Racial features: {race_lower: [(name, description), ...]}
+RACIAL_FEATURES = {
+    "elf": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Fey Ancestry", "Advantage vs charm, immune to magic sleep."),
+        ("Trance", "4 hours meditative rest equals 8 hours sleep."),
+    ],
+    "high elf": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Fey Ancestry", "Advantage vs charm, immune to magic sleep."),
+        ("Cantrip", "Know one wizard cantrip of your choice."),
+    ],
+    "wood elf": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Fey Ancestry", "Advantage vs charm, immune to magic sleep."),
+        ("Mask of the Wild", "Hide when lightly obscured by natural phenomena."),
+    ],
+    "dark elf": [
+        ("Superior Darkvision", "See in dim light 120 ft as bright, darkness as dim."),
+        ("Fey Ancestry", "Advantage vs charm, immune to magic sleep."),
+        ("Sunlight Sensitivity", "Disadvantage on attack rolls and Perception in direct sunlight."),
+    ],
+    "dwarf": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Dwarven Resilience", "Advantage on saves vs poison, resistance to poison damage."),
+        ("Stonecunning", "Double proficiency on History checks related to stonework."),
+    ],
+    "hill dwarf": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Dwarven Resilience", "Advantage on saves vs poison, resistance to poison damage."),
+        ("Dwarven Toughness", "+1 HP per level."),
+    ],
+    "mountain dwarf": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Dwarven Resilience", "Advantage on saves vs poison, resistance to poison damage."),
+        ("Dwarven Armor Training", "Proficiency with light and medium armor."),
+    ],
+    "halfling": [
+        ("Lucky", "Reroll 1s on attack rolls, ability checks, or saves."),
+        ("Brave", "Advantage on saves vs being frightened."),
+        ("Halfling Nimbleness", "Move through the space of any creature larger than you."),
+    ],
+    "lightfoot halfling": [
+        ("Lucky", "Reroll 1s on attack rolls, ability checks, or saves."),
+        ("Brave", "Advantage on saves vs being frightened."),
+        ("Naturally Stealthy", "Hide behind creatures larger than you."),
+    ],
+    "gnome": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Gnome Cunning", "Advantage on INT/WIS/CHA saves vs magic."),
+    ],
+    "forest gnome": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Gnome Cunning", "Advantage on INT/WIS/CHA saves vs magic."),
+        ("Natural Illusionist", "Know Minor Illusion cantrip (INT)."),
+    ],
+    "rock gnome": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Gnome Cunning", "Advantage on INT/WIS/CHA saves vs magic."),
+        ("Artificer's Lore", "Double proficiency on History checks about magic items."),
+    ],
+    "half-elf": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Fey Ancestry", "Advantage vs charm, immune to magic sleep."),
+        ("Skill Versatility", "Proficiency in two skills of your choice."),
+    ],
+    "half-orc": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Relentless Endurance", "Once per long rest: drop to 1 HP instead of 0."),
+        ("Savage Attacks", "On a critical hit, roll one weapon die extra."),
+    ],
+    "tiefling": [
+        ("Darkvision", "See in dim light 60 ft as bright, darkness as dim."),
+        ("Hellish Resistance", "Resistance to fire damage."),
+        ("Infernal Legacy", "Know Thaumaturgy. Hellish Rebuke at level 3."),
+    ],
+    "dragonborn": [
+        ("Breath Weapon",
+         "Exhale destructive energy: 2d6 damage in a 15-ft cone or 30-ft line. DEX or CON save."),
+        ("Damage Resistance", "Resistance to your draconic ancestry damage type."),
+    ],
+    "human": [
+        ("Extra Language", "Speak one additional language of your choice."),
+    ],
+}
+
+# Background features: {background_lower: (feature_name, description)}
+BACKGROUND_FEATURES = {
+    "acolyte": (
+        "Shelter of the Faithful",
+        "Command respect of your faith, perform religious ceremonies, "
+        "receive free healing at temples.",
+    ),
+    "charlatan": (
+        "False Identity",
+        "Forged documents and alternate identity. Can forge documents and duplicate handwriting.",
+    ),
+    "criminal": (
+        "Criminal Contact",
+        "Reliable contact in the criminal underworld for passing messages and finding local contacts.",
+    ),
+    "entertainer": (
+        "By Popular Demand",
+        "Always find a place to perform. Free lodging and modest lifestyle in exchange.",
+    ),
+    "folk hero": (
+        "Rustic Hospitality",
+        "Common folk shelter and feed you, hide you from authorities if needed.",
+    ),
+    "guild artisan": (
+        "Guild Membership",
+        "Guild provides lodging, legal aid, and contacts. You pay 5 gp/month dues.",
+    ),
+    "hermit": (
+        "Discovery",
+        "Uncovered a unique and powerful discovery — work with DM on what this is.",
+    ),
+    "noble": (
+        "Position of Privilege",
+        "Welcome in high society, people assume the best of you, access to high society events.",
+    ),
+    "outlander": (
+        "Wanderer",
+        "Excellent memory for maps and geography. Can find food/water for up to 6 people.",
+    ),
+    "sage": (
+        "Researcher",
+        "Know where to find information. If you don't know it, know who or where to ask.",
+    ),
+    "sailor": (
+        "Ship's Passage",
+        "Free passage on sailing ships for you and party. May require helping with ship duties.",
+    ),
+    "soldier": (
+        "Military Rank",
+        "Soldiers loyal to your old faction recognize rank, may defer to you or provide resources.",
+    ),
+    "urchin": (
+        "City Secrets",
+        "Know secret passages through cities. Travel between locations at double normal pace.",
+    ),
+}
+
+
+def get_character_features(char: "Character") -> list[tuple[str, str]]:
+    """Return all features for a character as (name, description) tuples."""
+    features: list[tuple[str, str]] = []
+
+    # Class features at or below character level
+    cls = (char.char_class or "").lower()
+    for min_lvl, name, desc in CLASS_FEATURE_DETAILS.get(cls, []):
+        if char.level >= min_lvl:
+            resolved = desc(char.level) if callable(desc) else desc
+            features.append((name, resolved))
+
+    # Racial features
+    species = (getattr(char, "race", "") or "").lower()
+    for name, desc in RACIAL_FEATURES.get(species, []):
+        features.append((name, desc))
+
+    # Background feature
+    bg = (char.background or "").lower()
+    if bg in BACKGROUND_FEATURES:
+        features.append(BACKGROUND_FEATURES[bg])
+
+    return features
+
+
 # Optimal ability score order per class (highest first = best stat → gets 15)
 # Maps class → ordered list of ability keys matching STANDARD_ARRAY order
 OPTIMAL_ABILITY_ORDER: dict[str, list[str]] = {

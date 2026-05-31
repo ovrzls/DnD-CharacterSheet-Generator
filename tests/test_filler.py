@@ -316,23 +316,25 @@ class TestPage2Attacks:
 
 
 class TestPage2FeaturesAndMagic:
-    def test_features_text(self):
+    def test_features_in_magic_abilities(self):
+        # Class features now appear in magic_abilities, not features_traits
         char = _make_fighter()
-        char.features = [FeatureEntry(name="Second Wind"), FeatureEntry(name="Action Surge")]
         v = character_to_field_values(char)
-        assert "Second Wind" in v["page2"]["features_traits"]
-        assert "Action Surge" in v["page2"]["features_traits"]
+        magic = v["page2"]["magic_abilities"]
+        assert "FIGHTING STYLE" in magic
+        assert "SECOND WIND" in magic
 
-    def test_features_empty_when_none(self):
+    def test_non_caster_magic_starts_with_no_spellcasting(self):
         char = _make_fighter()
-        char.features = []
         v = character_to_field_values(char)
-        assert v["page2"]["features_traits"] == ""
+        assert v["page2"]["magic_abilities"].startswith("No spellcasting.")
 
-    def test_non_caster_magic_shows_no_spellcasting(self):
+    def test_non_caster_magic_has_features_after_divider(self):
         char = _make_fighter()
         v = character_to_field_values(char)
-        assert v["page2"]["magic_abilities"] == "No spellcasting"
+        magic = v["page2"]["magic_abilities"]
+        assert "─" in magic
+        assert "FIGHTING STYLE" in magic
 
     def test_caster_has_spell_stats(self):
         char = _make_wizard()
@@ -377,11 +379,12 @@ class TestPage2FeaturesAndMagic:
         assert "2nd" in hdr
         assert hdr.count("[ ]") == 2
 
-    def test_caster_no_magic_abilities_key(self):
+    def test_caster_has_magic_abilities_with_features(self):
         char = _make_wizard()
         v = character_to_field_values(char)
-        # Casters do NOT produce the magic_abilities key
-        assert "magic_abilities" not in v["page2"]
+        # Casters now also get a magic_abilities block containing features
+        assert "magic_abilities" in v["page2"]
+        assert "SPELLBOOK" in v["page2"]["magic_abilities"]
 
 
 class TestPronouns:

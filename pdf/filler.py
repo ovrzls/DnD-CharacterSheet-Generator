@@ -22,7 +22,7 @@ from pypdf import PdfReader, PdfWriter
 import pypdf.generic
 
 from engine.character import Character
-from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS
+from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS, get_character_features
 
 _HERE = Path(__file__).parent
 SHEET_PDF = _HERE / "field_maps" / "OtG-Revised-Charactersheet.pdf"
@@ -344,15 +344,14 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         page2[f"atk{i}_dmg"]    = dmg_str
         page2[f"atk{i}_desc"]   = atk.damage_type
 
-    # Features & Traits
-    page2["features_traits"] = "\n".join(f.name for f in char.features)
-
-    # Magic & Special Abilities — spells added for casters
+    # Magic & Special Abilities — spells (casters) then features for all
     def _ordinal(n: int) -> str:
         return f"{n}{({1:'st',2:'nd',3:'rd'}).get(n,'th')}"
 
+    magic_lines: list[str] = []
+
     if char.sheet_variant != "caster":
-        page2["magic_abilities"] = "No spellcasting"
+        magic_lines.append("No spellcasting.")
     else:
         ab_score_map = {
             "strength": scores["str"], "dexterity": scores["dex"],
@@ -379,6 +378,15 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
             page2[f"spells_level_{_lvl}_list"] = "\n".join(
                 s.name for s in char.spells if s.level == _lvl
             )
+
+    features = get_character_features(char)
+    if features:
+        if magic_lines:
+            magic_lines.append("─" * 30)
+        for name, desc in features:
+            magic_lines.append(f"{name.upper()}: {desc}")
+
+    page2["magic_abilities"] = "\n".join(magic_lines)
 
     return {"page1": page1, "page2": page2}
 
