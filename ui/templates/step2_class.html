@@ -150,11 +150,18 @@ function updateSubclassSection() {
     SUBCLASS_TERMS[cls] || 'Subclass';
 
   const options = SUBCLASSES[cls] || [];
-  select.innerHTML =
-    '<option value="">— choose a subclass —</option>' +
-    options.map(s =>
-      '<option value="' + s + '"' + (s === SAVED_SUBCLASS ? ' selected' : '') + '>' + s + '</option>'
-    ).join('');
+  if (options.length === 0) {
+    section.hidden = true;
+    return;
+  }
+
+  const selectVal = (SAVED_SUBCLASS && options.includes(SAVED_SUBCLASS))
+    ? SAVED_SUBCLASS
+    : options[0];
+
+  select.innerHTML = options.map(s =>
+    '<option value="' + s + '"' + (s === selectVal ? ' selected' : '') + '>' + s + '</option>'
+  ).join('');
 
   section.hidden = false;
 
