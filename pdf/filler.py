@@ -22,7 +22,7 @@ from pypdf import PdfReader, PdfWriter
 import pypdf.generic
 
 from engine.character import Character
-from engine.rules import derive_stats
+from engine.rules import derive_stats, xp_for_level
 
 _HERE = Path(__file__).parent
 SHEET_PDF = _HERE / "field_maps" / "OtG-Revised-Charactersheet.pdf"
@@ -229,6 +229,7 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         "pronouns":   char.pronouns.strip(),
         "char_class": char.char_class.title(),
         "level":      str(char.level),
+        "xp":         str(getattr(char, "experience_points", None) or xp_for_level(char.level)),
         "inspiration": "✓" if char.inspiration else "",
 
         "str_score":  str(scores["str"]),

@@ -12,7 +12,8 @@
     "name":        {"x": 281, "y": 710, "font_size": 11, "align": "left",   "color": "#851846"},
     "pronouns":    {"x": 481, "y": 710, "font_size": 11, "align": "left",   "color": "#851846"},
     "char_class":  {"x": 285, "y": 662, "font_size": 11, "align": "left",   "color": "#851846"},
-    "level":       {"x": 453, "y": 662, "font_size": 11, "align": "left",   "color": "#851846"},
+    "level":       {"x": 393, "y": 662, "font_size": 11, "align": "left",   "color": "#851846"},
+    "xp":          {"x": 473, "y": 662, "font_size": 10, "align": "left",   "color": "#851846"},
     "inspiration": {"x": 229, "y": 625, "font_size":  9, "align": "left"},
 
     "str_score":  {"x":  87, "y": 550, "font_size": 14, "align": "center", "bold": true, "color": "#851846"},

@@ -95,6 +95,35 @@ PACT_CASTERS = {"warlock"}
 # Proficiency bonus by level
 PROFICIENCY_BY_LEVEL = {1: 2, 2: 2, 3: 2, 4: 2, 5: 3}
 
+# Standard D&D 5e XP thresholds (minimum XP per level)
+XP_THRESHOLDS: dict[int, int] = {
+    1:       0,
+    2:     300,
+    3:     900,
+    4:   2_700,
+    5:   6_500,
+    6:  14_000,
+    7:  23_000,
+    8:  34_000,
+    9:  48_000,
+    10: 64_000,
+    11: 85_000,
+    12: 100_000,
+    13: 120_000,
+    14: 140_000,
+    15: 165_000,
+    16: 195_000,
+    17: 225_000,
+    18: 265_000,
+    19: 305_000,
+    20: 355_000,
+}
+
+
+def xp_for_level(level: int) -> int:
+    """Return minimum XP needed to reach the given level."""
+    return XP_THRESHOLDS.get(max(1, min(20, level)), 0)
+
 # Starting gold (GP) per class — PHB average
 STARTING_GOLD: dict[str, int] = {
     "barbarian": 25,

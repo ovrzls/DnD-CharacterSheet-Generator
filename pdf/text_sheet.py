@@ -4,7 +4,7 @@ Generates an ASCII-art layout using box-drawing characters.
 """
 from __future__ import annotations
 from engine.character import Character
-from engine.rules import derive_stats
+from engine.rules import derive_stats, xp_for_level
 
 W = 66  # page width in characters
 
@@ -100,7 +100,7 @@ def generate_text_sheet(char: Character) -> str:
     lines.append("")
 
     lines.append(_box([
-        f"  NAME:    {char.name:<26} LEVEL: {char.level}",
+        f"  NAME:    {char.name:<26} LEVEL: {char.level}   XP: {getattr(char, 'experience_points', None) or xp_for_level(char.level)}",
         f"  CLASS:   {char.char_class.title():<26} HIT DIE: {char.level}{char.hit_dice}",
         f"  SPECIES: {(char.race or '—').title():<26} PROF BONUS: {_sign(prof)}",
         f"  BACKGROUND: {(char.background or '—').title()}",

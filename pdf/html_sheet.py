@@ -5,7 +5,7 @@ Generates a single self-contained HTML file (inline CSS, no external deps).
 from __future__ import annotations
 from html import escape as h
 from engine.character import Character
-from engine.rules import derive_stats
+from engine.rules import derive_stats, xp_for_level
 
 
 def _sign(n: int) -> str:
@@ -315,6 +315,7 @@ def generate_html_sheet(char: Character) -> str:
         <dt>Background</dt><dd>{background}</dd>
         <dt>Hit Dice</dt> <dd>{char.level}{h(char.hit_dice)}</dd>
         <dt>Prof. Bonus</dt><dd>{_sign(prof)}</dd>
+        <dt>XP</dt>       <dd>{getattr(char, 'experience_points', None) or xp_for_level(char.level)}</dd>
       </dl>
 
       <h2>Ability Scores</h2>

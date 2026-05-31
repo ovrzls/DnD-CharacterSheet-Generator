@@ -11,7 +11,7 @@ from engine.ability_scores import (
 from engine.rules import (
     derive_stats, select_sheet_variant, proficiency_bonus,
     ability_modifier, get_spell_slots, calc_max_hp,
-    get_hit_die, calc_spell_save_dc,
+    get_hit_die, calc_spell_save_dc, xp_for_level,
     RACE_ABILITY_BONUSES, FLEXIBLE_BONUS_COUNTS, FLEXIBLE_BONUS_AMOUNT,
     FIXED_BONUS_ABILITIES, ASI_LEVELS, FIGHTER_ASI_LEVELS, ROGUE_ASI_LEVELS,
 )
@@ -409,3 +409,14 @@ class TestACCalculation:
         char = _char_with_equipment("cleric", dex=9, items=[_CHAIN_MAIL, _SHIELD])
         derive_stats(char)  # second call
         assert char.armor_class == 18
+
+
+# ── XP thresholds ─────────────────────────────────────────────────────────────
+
+class TestXpForLevel:
+    def test_xp_for_level_1(self):   assert xp_for_level(1)  ==       0
+    def test_xp_for_level_2(self):   assert xp_for_level(2)  ==     300
+    def test_xp_for_level_3(self):   assert xp_for_level(3)  ==     900
+    def test_xp_for_level_20(self):  assert xp_for_level(20) == 355_000
+    def test_xp_clamps_below_1(self):  assert xp_for_level(0)  ==       0
+    def test_xp_clamps_above_20(self): assert xp_for_level(21) == 355_000
