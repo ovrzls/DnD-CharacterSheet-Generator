@@ -282,7 +282,7 @@ class TestPage2Attacks:
         v = character_to_field_values(char)
         assert v["page2"]["atk1_weapon"] == "Longsword"
         assert v["page2"]["atk1_hit"]    == "+5"
-        assert v["page2"]["atk1_dmg"]    == "1d8"
+        assert v["page2"]["atk1_dmg"]    == "1d8 +3"
         assert v["page2"]["atk1_desc"]   == "slashing"
 
     def test_multiple_attacks(self):

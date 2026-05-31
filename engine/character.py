@@ -42,6 +42,9 @@ class EquipmentItem:
     name: str = ""
     quantity: int = 1
     source: str = "srd"          # "srd" or document__key from Open5e
+    armor_type: str = ""         # "light", "medium", "heavy", or "" for non-armor
+    ac_base: int = 0             # base AC value for armor items
+    is_shield: bool = False      # True if this item is a shield (+2 AC)
 
 
 @dataclass

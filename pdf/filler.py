@@ -296,9 +296,11 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
 
     # Attacks (char.attacks is a list[Attack] built by equipment step)
     for i, atk in enumerate(char.attacks[:5], start=1):
+        dmg_mod = atk.hit_bonus - prof
+        dmg_str = atk.damage_dice if dmg_mod == 0 else f"{atk.damage_dice} {_sign(dmg_mod)}"
         page2[f"atk{i}_weapon"] = atk.name
         page2[f"atk{i}_hit"]    = _sign(atk.hit_bonus)
-        page2[f"atk{i}_dmg"]    = atk.damage_dice
+        page2[f"atk{i}_dmg"]    = dmg_str
         page2[f"atk{i}_desc"]   = atk.damage_type
 
     # Features & Traits

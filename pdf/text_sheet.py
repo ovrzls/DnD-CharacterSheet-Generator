@@ -224,9 +224,11 @@ def generate_text_sheet(char: Character) -> str:
         lines.append(f"  {'─'*22} {'─'*4}  {'─'*10} {'─'*12}")
         for atk in char.attacks[:5]:
             name = atk.name[:22]
+            dmg_mod = atk.hit_bonus - prof
+            dmg_str = atk.damage_dice if dmg_mod == 0 else f"{atk.damage_dice} {_sign(dmg_mod)}"
             lines.append(
                 f"  {name:<22} {_sign(atk.hit_bonus):>4}  "
-                f"{atk.damage_dice:<10} {atk.damage_type}"
+                f"{dmg_str:<10} {atk.damage_type}"
             )
         lines.append("")
 

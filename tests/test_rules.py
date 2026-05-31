@@ -3,7 +3,7 @@ Tests for the rules engine and ability score assignment.
 Run with: pytest tests/test_rules.py -v
 """
 import pytest
-from engine.character import Character, AbilityScores
+from engine.character import Character, AbilityScores, EquipmentItem
 from engine.ability_scores import (
     generate_scores, assign_scores_in_order, apply_racial_bonuses,
     validate_point_buy, STANDARD_ARRAY, ABILITIES
@@ -322,3 +322,90 @@ class TestAsiLevels:
 
     def test_rogue_one_asi_at_l4(self):
         assert self._slots_at(ROGUE_ASI_LEVELS, 4) == 1
+
+
+# ── AC calculation ────────────────────────────────────────────────────────────
+
+def _char_with_equipment(char_class: str, dex: int, con: int = 10, wis: int = 10,
+                          items=None) -> Character:
+    char = Character()
+    char.char_class = char_class
+    char.level = 1
+    char.ability_scores = AbilityScores(
+        strength=10, dexterity=dex, constitution=con,
+        intelligence=10, wisdom=wis, charisma=10,
+    )
+    char.equipment = items or []
+    return derive_stats(char)
+
+
+_LEATHER    = EquipmentItem(name="Leather",    armor_type="light",  ac_base=11)
+_BREASTPLATE= EquipmentItem(name="Breastplate",armor_type="medium", ac_base=14)
+_CHAIN_MAIL = EquipmentItem(name="Chain Mail", armor_type="heavy",  ac_base=16)
+_SHIELD     = EquipmentItem(name="Shield",     is_shield=True,      ac_base=2)
+
+
+class TestACCalculation:
+
+    def test_no_armor_base(self):
+        # DEX 14 (+2), no armor, no shield → AC 12
+        char = _char_with_equipment("fighter", dex=14)
+        assert char.armor_class == 12
+
+    def test_no_armor_with_shield(self):
+        # DEX 14 (+2), no armor, shield → AC 14
+        char = _char_with_equipment("fighter", dex=14, items=[_SHIELD])
+        assert char.armor_class == 14
+
+    def test_light_armor(self):
+        # Leather (11) + DEX +2 → AC 13
+        char = _char_with_equipment("rogue", dex=14, items=[_LEATHER])
+        assert char.armor_class == 13
+
+    def test_light_armor_negative_dex(self):
+        # Leather (11) + DEX -1 → AC 10 (negative DEX still applies to light armor)
+        item = EquipmentItem(name="Leather", armor_type="light", ac_base=11)
+        char = _char_with_equipment("rogue", dex=9, items=[item])
+        assert char.armor_class == 10
+
+    def test_medium_armor_dex_cap(self):
+        # Breastplate (14) + DEX 18 (+4) → AC 16 (capped at +2)
+        char = _char_with_equipment("fighter", dex=18, items=[_BREASTPLATE])
+        assert char.armor_class == 16
+
+    def test_medium_armor_low_dex(self):
+        # Breastplate (14) + DEX 12 (+1) → AC 15
+        char = _char_with_equipment("fighter", dex=12, items=[_BREASTPLATE])
+        assert char.armor_class == 15
+
+    def test_heavy_armor_ignores_dex(self):
+        # Chain Mail (16) + DEX 9 (-1) → AC 16 (DEX ignored)
+        char = _char_with_equipment("fighter", dex=9, items=[_CHAIN_MAIL])
+        assert char.armor_class == 16
+
+    def test_heavy_armor_with_shield(self):
+        # Chain Mail (16) + Shield (+2) → AC 18
+        char = _char_with_equipment("fighter", dex=10, items=[_CHAIN_MAIL, _SHIELD])
+        assert char.armor_class == 18
+
+    def test_cleric_chain_mail_shield_dex_9(self):
+        # The reported bug: Chain Mail (16) + Shield (+2) + DEX 9 (-1) → AC 18
+        # Heavy armor ignores DEX; shield always adds 2.
+        char = _char_with_equipment("cleric", dex=9, items=[_CHAIN_MAIL, _SHIELD])
+        assert char.armor_class == 18
+
+    def test_barbarian_unarmored_defense(self):
+        # No armor, DEX 14 (+2), CON 16 (+3) → AC 15
+        char = _char_with_equipment("barbarian", dex=14, con=16)
+        assert char.armor_class == 15
+
+    def test_monk_unarmored_defense(self):
+        # No armor, DEX 16 (+3), WIS 14 (+2) → AC 15
+        char = _char_with_equipment("monk", dex=16, wis=14)
+        assert char.armor_class == 15
+
+    def test_derive_stats_idempotent_with_armor(self):
+        # Calling derive_stats twice on an equipped character must not corrupt AC
+        char = _char_with_equipment("cleric", dex=9, items=[_CHAIN_MAIL, _SHIELD])
+        derive_stats(char)  # second call
+        assert char.armor_class == 18

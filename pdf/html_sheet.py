@@ -172,9 +172,12 @@ def generate_html_sheet(char: Character) -> str:
 
     # Attacks table
     if char.attacks:
+        def _dmg_str(a) -> str:
+            dmg_mod = a.hit_bonus - prof
+            return a.damage_dice if dmg_mod == 0 else f"{a.damage_dice} {_sign(dmg_mod)}"
         rows = "".join(
             f'<tr><td>{h(a.name)}</td><td>{_sign(a.hit_bonus)}</td>'
-            f'<td>{h(a.damage_dice)}</td><td>{h(a.damage_type)}</td></tr>'
+            f'<td>{h(_dmg_str(a))}</td><td>{h(a.damage_type)}</td></tr>'
             for a in char.attacks
         )
         attacks_html = (

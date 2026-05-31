@@ -465,6 +465,50 @@ def calc_spell_attack_bonus(spellcasting_mod: int, prof_bonus: int) -> int:
     return prof_bonus + spellcasting_mod
 
 
+# ── AC calculation ───────────────────────────────────────────────────────────
+
+def _compute_ac(char: "Character") -> int:
+    """
+    Compute AC from equipped armor and class unarmored-defense features.
+    Reads armor_type/ac_base/is_shield from EquipmentItem fields.
+    Falls back to 10 + DEX when no armor is present.
+    """
+    scores = char.ability_scores
+    dex_mod = (scores.dexterity   - 10) // 2
+    con_mod = (scores.constitution - 10) // 2
+    wis_mod = (scores.wisdom      - 10) // 2
+
+    armor = None
+    has_shield = False
+    for item in char.equipment:
+        if getattr(item, "is_shield", False):
+            has_shield = True
+        elif getattr(item, "armor_type", "") in ("light", "medium", "heavy"):
+            armor = item
+
+    shield_bonus = 2 if has_shield else 0
+
+    if armor is None:
+        cls = (char.char_class or "").lower()
+        if cls == "barbarian":
+            base = 10 + dex_mod + con_mod
+        elif cls == "monk":
+            base = 10 + dex_mod + wis_mod
+        else:
+            base = 10 + dex_mod
+    else:
+        armor_type = armor.armor_type
+        ac_base    = armor.ac_base
+        if armor_type == "light":
+            base = ac_base + dex_mod
+        elif armor_type == "medium":
+            base = ac_base + min(dex_mod, 2)
+        else:  # heavy
+            base = ac_base  # DEX never contributes
+
+    return base + shield_bonus
+
+
 # ── Main derive function ──────────────────────────────────────────────────────
 
 def derive_stats(character: Character) -> Character:
@@ -503,8 +547,8 @@ def derive_stats(character: Character) -> Character:
     # Initiative
     character.initiative = calc_initiative(dex_mod)
 
-    # Armor class (base: 10 + DEX — no armor assumed; equipment step adds armor)
-    character.armor_class = 10 + dex_mod
+    # Armor class — reads EquipmentItem metadata when equipment is present
+    character.armor_class = _compute_ac(character)
 
     # Speed (default 30 — racial overrides handled in PROTO-1 race step)
     if not character.speed:

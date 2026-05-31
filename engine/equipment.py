@@ -177,6 +177,14 @@ CLASS_OPTIONS: dict[str, dict] = {
     },
 }
 
+# Maps armor keys to D&D armor category (used to set EquipmentItem.armor_type)
+_ARMOR_TYPE: dict[str, str] = {
+    "leather":         "light",
+    "studded_leather": "light",
+    "scale_mail":      "medium",
+    "chain_mail":      "heavy",
+}
+
 # ── AC calculation ─────────────────────────────────────────────────────────────
 
 def calc_ac(armor_key: str, dex_mod: int, char_class: str = "",
@@ -323,9 +331,14 @@ def _build_equipment(char_class: str, ability_scores: AbilityScores,
     items: list[EquipmentItem] = []
 
     if armor_key != "none":
-        items.append(EquipmentItem(name=armor_key.replace("_", " ").title(), source="srd"))
+        items.append(EquipmentItem(
+            name=armor_key.replace("_", " ").title(),
+            source="srd",
+            armor_type=_ARMOR_TYPE.get(armor_key, ""),
+            ac_base=ARMOR[armor_key]["base_ac"],
+        ))
     if has_shield:
-        items.append(EquipmentItem(name="Shield", source="srd"))
+        items.append(EquipmentItem(name="Shield", source="srd", is_shield=True, ac_base=2))
 
     # Aggregate weapon quantities so e.g. 4 javelins → one item with qty=4
     weapon_counts: dict[str, int] = {}
@@ -343,10 +356,10 @@ def _build_equipment(char_class: str, ability_scores: AbilityScores,
     for extra in opts["extras"]:
         items.append(EquipmentItem(name=extra["name"], quantity=extra["quantity"], source="srd"))
 
-    # Build Attack list: primary weapon choice + any ranged extras (deduped, ordered)
+    # Build Attack list: primary weapon choice + all extra weapons (deduped, ordered)
     attack_weapon_keys: list[str] = list(weapon_choice)
     for wk in armor_bonus_weapons + list(opts["extra_weapons"]):
-        if wk in WEAPONS and (WEAPONS[wk]["ranged"] or wk == "javelin"):
+        if wk in WEAPONS:
             attack_weapon_keys.append(wk)
     # Deduplicate while preserving order
     seen: set[str] = set()
