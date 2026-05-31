@@ -4,7 +4,7 @@ Generates an ASCII-art layout using box-drawing characters.
 """
 from __future__ import annotations
 from engine.character import Character
-from engine.rules import derive_stats, xp_for_level
+from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS
 
 W = 66  # page width in characters
 
@@ -162,7 +162,7 @@ def generate_text_sheet(char: Character) -> str:
     ])
     lines.append("")
 
-    # Proficiencies — categorized
+    # Proficiencies — categorized sections
     _txt_cats: list[str] = []
     if char.armor_proficiencies:
         _txt_cats += _wrap("Armor: " + ", ".join(char.armor_proficiencies), indent=4)
@@ -170,6 +170,11 @@ def generate_text_sheet(char: Character) -> str:
         _txt_cats += _wrap("Weapons: " + ", ".join(char.weapon_proficiencies), indent=4)
     if char.tool_proficiencies:
         _txt_cats += _wrap("Tools: " + ", ".join(char.tool_proficiencies), indent=4)
+    _bg_key = (char.background or "").lower()
+    _bg_skills = BACKGROUND_SKILLS.get(_bg_key, [])
+    if _bg_skills:
+        _bg_label = (char.background or "").title()
+        _txt_cats += _wrap(f"Background ({_bg_label}): " + ", ".join(_bg_skills), indent=4)
     if char.languages:
         _txt_cats += _wrap("Languages: " + ", ".join(char.languages), indent=4)
     _senses_txt = getattr(char, 'senses', None)
@@ -186,7 +191,7 @@ def generate_text_sheet(char: Character) -> str:
         lines.append("  INVENTORY")
         for item in char.equipment:
             qty = f"{item.quantity}× " if item.quantity > 1 else ""
-            lines.append(f"  • {qty}{item.name}")
+            lines.append(f"  [ ] {qty}{item.name}")
         gold_val = getattr(char, "gold", 0)
         if gold_val:
             lines.append(f"  Gold: {gold_val} gp")

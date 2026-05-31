@@ -5,7 +5,7 @@ Generates a single self-contained HTML file (inline CSS, no external deps).
 from __future__ import annotations
 from html import escape as h
 from engine.character import Character
-from engine.rules import derive_stats, xp_for_level
+from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS
 
 
 def _sign(n: int) -> str:
@@ -63,6 +63,10 @@ td{border-bottom:1px solid #f0d0e0;padding:.35rem .5rem}
 tr:nth-child(even) td{background:#fff0f7}
 ul{padding-left:1.25rem}
 li{margin:.2rem 0;font-size:.95rem}
+.inventory-list{list-style:none;padding:0}
+.inventory-list li{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:.75rem}
+.inventory-list input[type="checkbox"]{width:12px;height:12px;accent-color:#00696A;
+  flex-shrink:0;background:#E8EAE7}
 
 /* Spell grid */
 .spell-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-top:.5rem}
@@ -188,14 +192,16 @@ def generate_html_sheet(char: Character) -> str:
     else:
         attacks_html = '<p>No attacks recorded.</p>'
 
-    # Equipment
+    # Equipment — checkbox list for marking items as equipped during play
     if char.equipment:
         items = "".join(
-            f'<li>{"" if item.quantity == 1 else str(item.quantity) + "× "}'
-            f'{h(item.name)}</li>'
+            f'<li>'
+            f'<input type="checkbox" aria-label="Mark {h("" if item.quantity == 1 else str(item.quantity) + "× ")}{h(item.name)} as equipped">'
+            f'<span>{"" if item.quantity == 1 else str(item.quantity) + "× "}{h(item.name)}</span>'
+            f'</li>'
             for item in char.equipment
         )
-        equipment_html = f'<ul aria-label="Equipment list">{items}</ul>'
+        equipment_html = f'<ul class="inventory-list" aria-label="Equipment list">{items}</ul>'
     else:
         equipment_html = '<p>No equipment recorded.</p>'
 
@@ -266,21 +272,27 @@ def generate_html_sheet(char: Character) -> str:
             '</section>'
         )
 
-    # Proficiencies — categorized
-    _prof_cats: list[str] = []
+    # Proficiencies — categorized sections
+    _prof_rows: list[str] = []
     if char.armor_proficiencies:
-        _prof_cats.append(f"<strong>Armor:</strong> {h(', '.join(char.armor_proficiencies))}")
+        _prof_rows.append(f"<dt>Armor</dt><dd>{h(', '.join(char.armor_proficiencies))}</dd>")
     if char.weapon_proficiencies:
-        _prof_cats.append(f"<strong>Weapons:</strong> {h(', '.join(char.weapon_proficiencies))}")
+        _prof_rows.append(f"<dt>Weapons</dt><dd>{h(', '.join(char.weapon_proficiencies))}</dd>")
     if char.tool_proficiencies:
-        _prof_cats.append(f"<strong>Tools:</strong> {h(', '.join(char.tool_proficiencies))}")
+        _prof_rows.append(f"<dt>Tools</dt><dd>{h(', '.join(char.tool_proficiencies))}</dd>")
+    _bg_key = (char.background or "").lower()
+    _bg_skills = BACKGROUND_SKILLS.get(_bg_key, [])
+    if _bg_skills:
+        _bg_label = h((char.background or "").title())
+        _prof_rows.append(f"<dt>Background ({_bg_label})</dt><dd>{h(', '.join(_bg_skills))}</dd>")
     if char.languages:
-        _prof_cats.append(f"<strong>Languages:</strong> {h(', '.join(char.languages))}")
+        _prof_rows.append(f"<dt>Languages</dt><dd>{h(', '.join(char.languages))}</dd>")
     _senses_html = getattr(char, 'senses', None)
     if _senses_html:
         _sv = ', '.join(_senses_html) if isinstance(_senses_html, list) else str(_senses_html)
-        _prof_cats.append(f"<strong>Senses:</strong> {h(_sv)}")
-    prof_text = "<br>".join(_prof_cats) if _prof_cats else "None listed."
+        _prof_rows.append(f"<dt>Senses</dt><dd>{h(_sv)}</dd>")
+    prof_dl = ('<dl aria-label="Proficiencies and languages">' + "".join(_prof_rows) + "</dl>"
+               if _prof_rows else "<p>None listed.</p>")
 
     # Passive scores
     wis_mod = _mod(ab.wisdom)
@@ -339,7 +351,7 @@ def generate_html_sheet(char: Character) -> str:
       </dl>
 
       <h2>Proficiencies &amp; Languages</h2>
-      <p>{prof_text}</p>
+      {prof_dl}
     </section>
 
     <section class="page-back" aria-labelledby="combat-heading">

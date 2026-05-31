@@ -22,7 +22,7 @@ from pypdf import PdfReader, PdfWriter
 import pypdf.generic
 
 from engine.character import Character
-from engine.rules import derive_stats, xp_for_level
+from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS
 
 _HERE = Path(__file__).parent
 SHEET_PDF = _HERE / "field_maps" / "OtG-Revised-Charactersheet.pdf"
@@ -104,6 +104,33 @@ def _draw_text(
         c.drawString(x, y, str(text))
 
 
+def _draw_inventory_with_checkboxes(
+    c: canvas.Canvas,
+    items: list,
+    x: float,
+    y: float,
+    font_size: int,
+    line_height: int,
+) -> None:
+    """Draw each item preceded by a small filled checkbox square."""
+    checkbox_color = HexColor("#E8EAE7")
+    stroke_color   = HexColor("#AAAAAA")
+    text_color     = HexColor("#1a1a1a")
+    checkbox_size  = 8
+    gap            = 4
+
+    cur_y = y
+    for item_text in items:
+        c.setFillColor(checkbox_color)
+        c.setStrokeColor(stroke_color)
+        c.setLineWidth(0.5)
+        c.rect(x, cur_y - 1, checkbox_size, checkbox_size, fill=1, stroke=1)
+        c.setFillColor(text_color)
+        c.setFont("Helvetica", font_size)
+        c.drawString(x + checkbox_size + gap, cur_y, str(item_text))
+        cur_y -= line_height
+
+
 def _render_page(fields_data: dict, values: dict[str, Any]) -> bytes:
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=letter)
@@ -111,6 +138,16 @@ def _render_page(fields_data: dict, values: dict[str, Any]) -> bytes:
     for field_name, spec in fields_data.items():
         value = values.get(field_name)
         if value is None:
+            continue
+        if spec.get("type") == "inventory" and isinstance(value, list):
+            if value:
+                _draw_inventory_with_checkboxes(
+                    c, value,
+                    x=spec["x"],
+                    y=spec["y"],
+                    font_size=spec.get("font_size", 9),
+                    line_height=spec.get("line_height", 11),
+                )
             continue
         raw_color = spec.get("color")
         field_color = HexColor(raw_color) if raw_color else None
@@ -193,7 +230,7 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
     passive_investigation = 10 + mod(scores["int"]) + (2 * prof if inv_exp else prof if inv_prof else 0)
     passive_insight       = 10 + mod(scores["wis"]) + (2 * prof if ins_exp else prof if ins_prof else 0)
 
-    # Proficiencies text block — categorized
+    # Proficiencies text block — categorized sections
     _cat: list[str] = []
     if char.armor_proficiencies:
         _cat.append("Armor: " + ", ".join(char.armor_proficiencies))
@@ -201,6 +238,10 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         _cat.append("Weapons: " + ", ".join(char.weapon_proficiencies))
     if char.tool_proficiencies:
         _cat.append("Tools: " + ", ".join(char.tool_proficiencies))
+    _bg_key = (char.background or "").lower()
+    _bg_skills = BACKGROUND_SKILLS.get(_bg_key, [])
+    if _bg_skills:
+        _cat.append(f"Background ({(char.background or '').title()}): " + ", ".join(_bg_skills))
     if char.languages:
         _cat.append("Languages: " + ", ".join(char.languages))
     _senses = getattr(char, 'senses', None)
@@ -209,12 +250,11 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         _cat.append("Senses: " + _senses_str)
     proficiencies_text = "\n".join(_cat)
 
-    # Equipment list — EquipmentItem has only name/quantity/source, no equipped flag
-    inventory_lines = []
-    for item in char.equipment:
-        qty = f"{item.quantity}x " if item.quantity > 1 else ""
-        inventory_lines.append(f"• {qty}{item.name}")
-    inventory_text = "\n".join(inventory_lines)
+    # Equipment list — build as a list so _render_page can draw per-item checkboxes
+    inventory_items = [
+        f"{item.quantity}x {item.name}" if item.quantity > 1 else item.name
+        for item in char.equipment
+    ]
 
     # Proficiency indicator: ◆ expertise, ● proficient, blank otherwise
     def prof_marker(skill_name: str) -> str:
@@ -252,7 +292,7 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
 
         "proficiencies_text": proficiencies_text,
 
-        "inventory": inventory_text,
+        "inventory": inventory_items,
         "money":     f"{char.gold} gp",
     }
 

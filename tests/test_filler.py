@@ -181,7 +181,7 @@ class TestPage1Equipment:
         char = _make_fighter()
         char.equipment = []
         v = character_to_field_values(char)
-        assert v["page1"]["inventory"] == ""
+        assert v["page1"]["inventory"] == []
 
 
 class TestPage1Proficiencies:

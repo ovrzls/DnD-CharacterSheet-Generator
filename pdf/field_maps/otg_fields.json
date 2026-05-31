@@ -75,8 +75,8 @@
     "skill_prof_survival":        {"x": 439.5, "y": 349, "font_size":  9, "align": "center", "color": "#851846"},
     "skill_survival":             {"x": 463,   "y": 348, "font_size": 11, "align": "center", "color": "#851846"},
 
-    "inventory": {"x": 275, "y": 278, "font_size": 11, "align": "left", "multiline": true, "max_width": 295, "line_height": 14, "color": "#222222"},
-    "equipped":  {"x": 275, "y": 162, "font_size":  7, "align": "left", "multiline": true, "max_width": 295, "line_height": 12},
+    "inventory": {"x": 275, "y": 278, "font_size": 9, "align": "left", "type": "inventory", "line_height": 13, "max_width": 295},
+    "equipped":  {"x": 275, "y": 162, "font_size": 7, "align": "left", "type": "inventory", "line_height": 12, "max_width": 295},
     "money":     {"x": 456, "y":  55, "font_size":  9, "align": "left"},
 
     "attunement_1": {"x": 295, "y": 51, "font_size": 7, "align": "center"},
