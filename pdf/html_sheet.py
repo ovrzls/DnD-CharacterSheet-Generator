@@ -68,11 +68,21 @@ li{margin:.2rem 0;font-size:.95rem}
 .inventory-list input[type="checkbox"]{width:12px;height:12px;accent-color:#00696A;
   flex-shrink:0;background:#E8EAE7}
 
-/* Spell grid */
-.spell-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-top:.5rem}
-@media(min-width:600px){.spell-grid{grid-template-columns:repeat(4,1fr)}}
-.spell-col h3{font-size:.85rem;margin-bottom:.2rem}
-.slot-row{font-size:.8rem;color:#555;margin-bottom:.2rem}
+/* Spell columns */
+.spell-stats-line{font-size:.75rem;color:#555;margin:.3rem 0 .6rem}
+.spell-columns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+@media(min-width:600px){.spell-columns{grid-template-columns:repeat(4,1fr)}}
+@media print{.spell-columns{grid-template-columns:repeat(4,1fr)}}
+.spell-col-header{font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:1px solid #D4006A;padding-bottom:3px;margin-bottom:4px;
+  display:flex;justify-content:space-between;align-items:center}
+.slot-boxes{display:flex;gap:2px}
+.slot-boxes input[type="checkbox"]{width:10px;height:10px;accent-color:#D4006A;flex-shrink:0}
+.spell-list{list-style:none;padding:0;font-size:.7rem}
+.spell-list li{margin-bottom:3px;line-height:1.4;display:flex;flex-wrap:wrap;align-items:center;gap:2px}
+.spell-name{font-weight:500}
+.spell-effect{color:#666;font-size:.65rem}
+.spell-conc{background:#D4006A;color:#fff;font-size:.6rem;padding:0 3px;border-radius:3px}
 
 /* Features list */
 .features-list{margin:.4rem 0 0}
@@ -230,6 +240,34 @@ def generate_html_sheet(char: Character) -> str:
     def _ordinal_html(n: int) -> str:
         return f"{n}{({1:'st',2:'nd',3:'rd'}).get(n,'th')}"
 
+    def _spell_entry_html(sp) -> str:
+        flags = (getattr(sp, "flags", "") or "").split()
+        conc = '<span class="spell-conc" title="Concentration" aria-label="Concentration">C</span>' if "C" in flags else ""
+        effect_dmg = (getattr(sp, "effect_dmg", "") or "").strip()
+        effect_html = (f'<span class="spell-effect">{h(effect_dmg[:20])}</span>'
+                       if effect_dmg else "")
+        return (f'<li>'
+                f'<span class="spell-name">{h(sp.name)}</span>'
+                f'{effect_html}{conc}'
+                f'</li>')
+
+    def _spell_col_html(header_text: str, slots: int, spells: list, col_label: str) -> str:
+        slot_inputs = "".join(
+            f'<input type="checkbox" aria-label="Slot {i}">'
+            for i in range(1, min(slots, 9) + 1)
+        )
+        slots_span = (
+            f'<span class="slot-boxes" aria-label="{slots} spell slots">{slot_inputs}</span>'
+            if slots > 0 else ""
+        )
+        items = "".join(_spell_entry_html(s) for s in spells) or '<li>—</li>'
+        return (
+            f'<section class="spell-col" aria-label="{h(col_label)}">'
+            f'<h4 class="spell-col-header"><span>{h(header_text)}</span>{slots_span}</h4>'
+            f'<ul class="spell-list">{items}</ul>'
+            f'</section>'
+        )
+
     if char.sheet_variant == "caster":
         _ab_score_map = {
             "strength": ab.strength, "dexterity": ab.dexterity,
@@ -238,41 +276,32 @@ def generate_html_sheet(char: Character) -> str:
         }
         _spell_mod = _mod(_ab_score_map.get((char.spellcasting_ability or "").lower(), 10))
         spell_stats_html = (
-            f'<p role="note" aria-label="Spellcasting stats">'
-            f'Modifier: {_sign(_spell_mod)} &nbsp;|&nbsp; '
+            f'<p class="spell-stats-line" role="note" aria-label="Spellcasting stats">'
+            f'Spell Mod: {_sign(_spell_mod)} &nbsp;|&nbsp; '
             f'Attack Bonus: {_sign(char.spell_attack_bonus)} &nbsp;|&nbsp; '
             f'Save DC: {char.spell_save_dc}'
             f'</p>'
         )
-        # Cantrips column
-        _cantrip_items = "".join(f'<li>{h(s.name)}</li>' for s in char.always_available)
-        cantrips_col = (
-            '<div class="spell-col">'
-            '<h3>Cantrips (At Will)</h3>'
-            f'<ul>{_cantrip_items if _cantrip_items else "<li>—</li>"}</ul>'
-            '</div>'
+
+        spell_cols_html = _spell_col_html(
+            "Cantrips (At Will)", 0, char.always_available, "Cantrips"
         )
-        # Spell level columns
-        spell_level_cols = ""
         for _lvl, _slots in sorted(char.spell_slots.items()):
             if _slots <= 0:
                 continue
-            _boxes = " ".join("☐" for _ in range(min(int(_slots), 9)))
+            _ord = _ordinal_html(_lvl)
             _lvl_spells = [s for s in char.spells if s.level == _lvl]
-            _items = "".join(f'<li>{h(s.name)}</li>' for s in _lvl_spells)
-            spell_level_cols += (
-                f'<div class="spell-col" aria-label="{_ordinal_html(_lvl)} level spells">'
-                f'<h3>{h(_ordinal_html(_lvl))} Level</h3>'
-                f'<p class="slot-row">Slots: {_boxes}</p>'
-                f'<ul>{_items if _items else "<li>—</li>"}</ul>'
-                '</div>'
+            spell_cols_html += _spell_col_html(
+                f"{_ord.upper()} LEVEL", int(_slots), _lvl_spells,
+                f"{_ord} level spells"
             )
+
         magic_section = (
             '<section class="page-back" aria-labelledby="magic-heading">'
             '<h2 id="magic-heading">Magic &amp; Special Abilities</h2>'
             + spell_stats_html +
-            '<div class="spell-grid">'
-            + cantrips_col + spell_level_cols +
+            '<div class="spell-columns" role="group" aria-label="Spell slots and spells">'
+            + spell_cols_html +
             '</div>'
             + features_dl +
             '</section>'

@@ -54,7 +54,8 @@ def _draw_wrapped(
     font_name: str,
     max_width: float,
     line_height: int,
-) -> None:
+) -> float:
+    """Draw word-wrapped text. Returns the y coordinate after the last line."""
     cur_y = y
     for paragraph in str(text).split("\n"):
         words = paragraph.split()
@@ -74,6 +75,7 @@ def _draw_wrapped(
         if line:
             c.drawString(x, cur_y, " ".join(line))
             cur_y -= line_height
+    return cur_y
 
 
 def _draw_text(
@@ -81,27 +83,29 @@ def _draw_text(
     text: str,
     x: float,
     y: float,
-    font_size: int = 9,
+    font_size: float = 9,
     align: str = "left",
     max_width: float | None = None,
     multiline: bool = False,
-    line_height: int = 11,
+    line_height: float = 11,
     bold: bool = False,
     color: Any | None = None,
-) -> None:
+) -> float:
+    """Draw text. Returns y after the last drawn line (useful for multiline)."""
     if not text:
-        return
+        return y
     font_name = "Helvetica-Bold" if bold else "Helvetica"
     c.setFont(font_name, font_size)
     c.setFillColor(color if color is not None else _DEFAULT_COLOR)
     if multiline and max_width:
-        _draw_wrapped(c, str(text), x, y, font_size, font_name, max_width, line_height)
+        return _draw_wrapped(c, str(text), x, y, font_size, font_name, max_width, line_height)
     elif align == "center":
         c.drawCentredString(x, y, str(text))
     elif align == "right":
         c.drawRightString(x, y, str(text))
     else:
         c.drawString(x, y, str(text))
+    return y
 
 
 def _draw_inventory_with_checkboxes(
@@ -131,7 +135,206 @@ def _draw_inventory_with_checkboxes(
         cur_y -= line_height
 
 
-def _render_page(fields_data: dict, values: dict[str, Any]) -> bytes:
+def _spell_effect_summary(sp) -> str:
+    """Extract a brief effect summary (≤20 chars) from a SpellEntry."""
+    flags = (getattr(sp, "flags", "") or "").split()
+    conc = " (C)" if "C" in flags else ""
+    effect_dmg = (getattr(sp, "effect_dmg", "") or "").strip()
+    if effect_dmg:
+        return (effect_dmg[:18 - len(conc)] + conc)[:20]
+    return conc.strip()
+
+
+def _build_spell_columns(char: Character) -> list[dict]:
+    """Return column data for the spell layout (cantrips + one column per slot level)."""
+    columns: list[dict] = []
+    ordinals = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th"]
+
+    if char.always_available:
+        entries = []
+        for sp in char.always_available:
+            eff = _spell_effect_summary(sp)
+            entries.append(sp.name + (f" — {eff}" if eff else ""))
+        columns.append({"header": "CANTRIPS (AT WILL)", "entries": entries, "slots": 0})
+
+    spells_by_level: dict[int, list] = {}
+    for sp in char.spells:
+        spells_by_level.setdefault(sp.level, []).append(sp)
+
+    for lvl, slots in sorted(char.spell_slots.items()):
+        if slots <= 0:
+            continue
+        ord_str = ordinals[min(lvl - 1, 8)]
+        header = f"{ord_str.upper()} LEVEL"
+        entries = []
+        for sp in spells_by_level.get(lvl, []):
+            eff = _spell_effect_summary(sp)
+            entries.append(sp.name + (f" — {eff}" if eff else ""))
+        columns.append({"header": header, "entries": entries, "slots": slots})
+
+    return columns
+
+
+def _trunc_to_width(c: canvas.Canvas, text: str, font: str, size: float, max_w: float) -> str:
+    """Truncate text with ellipsis to fit within max_w points."""
+    if c.stringWidth(text, font, size) <= max_w:
+        return text
+    while text and c.stringWidth(text.rstrip() + "…", font, size) > max_w:
+        text = text[:-1]
+    return text.rstrip() + "…"
+
+
+def _draw_slot_boxes(c: canvas.Canvas, x: float, y: float, count: int,
+                     size: float = 7.0, gap: float = 3.0) -> float:
+    """Draw `count` empty slot boxes; returns x after the last box."""
+    c.setFillColor(HexColor("#FFFFFF"))
+    c.setStrokeColor(HexColor("#1a1a1a"))
+    c.setLineWidth(0.5)
+    for _ in range(min(count, 9)):
+        c.rect(x, y, size, size, fill=1, stroke=1)
+        x += size + gap
+    return x
+
+
+def _draw_one_column_row(
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    columns: list[dict],
+    col_width: float,
+    col_gap: float,
+    header_font: float,
+    entry_font: float,
+) -> float:
+    """Draw one row of up to 4 spell columns at (x, y). Returns row height in pts."""
+    header_h = header_font + 6.0
+    entry_h = entry_font + 2.0
+    max_entries = max((len(col["entries"]) for col in columns), default=0)
+
+    for i, col in enumerate(columns):
+        cx = x + i * (col_width + col_gap)
+        _draw_text(c, col["header"], cx, y, font_size=header_font, bold=True)
+        if col["slots"] > 0:
+            hdr_w = c.stringWidth(col["header"], "Helvetica-Bold", header_font)
+            _draw_slot_boxes(c, cx + hdr_w + 4, y - 1, col["slots"],
+                             size=header_font - 1, gap=2)
+        entry_y = y - header_h
+        for entry in col["entries"]:
+            max_chars = int(col_width / (entry_font * 0.6))
+            if len(entry) > max_chars:
+                entry = entry[:max_chars - 1] + "…"
+            _draw_text(c, entry, cx, entry_y, font_size=entry_font)
+            entry_y -= entry_h
+
+    return header_h + max_entries * entry_h
+
+
+def _draw_spell_columns_block(
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    columns: list[dict],
+    col_width: float = 130.0,
+    col_gap: float = 8.0,
+    header_font: float = 7.0,
+    entry_font: float = 6.5,
+) -> float:
+    """Draw spell columns 4-per-row, stacking rows downward. Returns total height used."""
+    total_height = 0.0
+    for row_start in range(0, len(columns), 4):
+        row_cols = columns[row_start:row_start + 4]
+        row_h = _draw_one_column_row(
+            c, x, y - total_height,
+            row_cols, col_width, col_gap, header_font, entry_font,
+        )
+        total_height += row_h + 6.0
+    return total_height
+
+
+def _draw_divider_block(
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    width: float,
+    color: str = "#CCCCCC",
+) -> float:
+    """Draw a horizontal rule at (x, y). Returns height consumed (line + padding)."""
+    c.setStrokeColor(HexColor(color))
+    c.setLineWidth(0.3)
+    c.line(x, y, x + width, y)
+    return 8.0
+
+
+def _draw_features_block(
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    features: list[tuple[str, str]],
+    max_width: float = 540.0,
+    font_size: float = 6.0,
+    line_height: float = 9.0,
+) -> float:
+    """Draw feature list (NAME: description) flowing downward. Returns total height used."""
+    total_height = 0.0
+    for name, desc in features:
+        text = f"{name.upper()}: {desc}"
+        start_y = y - total_height
+        final_y = _draw_wrapped(c, text, x, start_y, font_size, "Helvetica",
+                                max_width, line_height)
+        total_height += (start_y - final_y) + 2.0
+    return total_height
+
+
+def _draw_spell_section(
+    c: canvas.Canvas,
+    char: Character,
+    magic_spec: dict,
+    spell_stats_spec: dict | None = None,
+    col_spec: dict | None = None,
+) -> None:
+    """Draw magic & special abilities using a vertical flow layout."""
+    eff = col_spec or magic_spec
+    x = float(eff.get("x", 50))
+    y = float(eff.get("y", 230))
+    max_width = float(magic_spec.get("max_width", 540))
+
+    # Spell stats drawn at its own fixed coordinates — outside the flow
+    if spell_stats_spec and char.sheet_variant == "caster":
+        ab = char.ability_scores
+        ab_map = {
+            "strength": ab.strength, "dexterity": ab.dexterity,
+            "constitution": ab.constitution, "intelligence": ab.intelligence,
+            "wisdom": ab.wisdom, "charisma": ab.charisma,
+        }
+        spell_mod = (ab_map.get((char.spellcasting_ability or "").lower(), 10) - 10) // 2
+        stats_text = (
+            f"Spell Mod: {_sign(spell_mod)}  |  "
+            f"Attack: {_sign(char.spell_attack_bonus)}  |  "
+            f"Save DC: {char.spell_save_dc}"
+        )
+        _draw_text(c, stats_text,
+                   float(spell_stats_spec.get("x", x)),
+                   float(spell_stats_spec.get("y", y)),
+                   font_size=float(spell_stats_spec.get("font_size", 7)))
+
+    cur_y = y
+
+    if char.sheet_variant == "caster":
+        columns = _build_spell_columns(char)
+        if columns:
+            cur_y -= _draw_spell_columns_block(c, x, cur_y, columns)
+    else:
+        _draw_text(c, "No spellcasting.", x, cur_y, font_size=7)
+        cur_y -= 14.0
+
+    features = get_character_features(char)
+    if features:
+        cur_y -= _draw_divider_block(c, x, cur_y, max_width)
+        _draw_features_block(c, x, cur_y, features, max_width=max_width)
+
+
+def _render_page(fields_data: dict, values: dict[str, Any],
+                 extra_draw=None) -> bytes:
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=letter)
 
@@ -164,6 +367,9 @@ def _render_page(fields_data: dict, values: dict[str, Any]) -> bytes:
             bold=spec.get("bold", False),
             color=field_color,
         )
+
+    if extra_draw is not None:
+        extra_draw(c)
 
     c.save()
     buf.seek(0)
@@ -344,49 +550,7 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         page2[f"atk{i}_dmg"]    = dmg_str
         page2[f"atk{i}_desc"]   = atk.damage_type
 
-    # Magic & Special Abilities — spells (casters) then features for all
-    def _ordinal(n: int) -> str:
-        return f"{n}{({1:'st',2:'nd',3:'rd'}).get(n,'th')}"
-
-    magic_lines: list[str] = []
-
-    if char.sheet_variant != "caster":
-        magic_lines.append("No spellcasting.")
-    else:
-        ab_score_map = {
-            "strength": scores["str"], "dexterity": scores["dex"],
-            "constitution": scores["con"], "intelligence": scores["int"],
-            "wisdom": scores["wis"], "charisma": scores["cha"],
-        }
-        _spell_ability = (char.spellcasting_ability or "").lower()
-        _spell_mod = mod(ab_score_map.get(_spell_ability, 10))
-        page2["spell_stats"] = (
-            f"Modifier: {_sign(_spell_mod)}  |  "
-            f"Attack Bonus: {_sign(char.spell_attack_bonus)}  |  "
-            f"Save DC: {char.spell_save_dc}"
-        )
-        page2["cantrips_header"] = "Cantrips (At Will)"
-        page2["cantrips_list"] = "\n".join(
-            s.name for s in char.always_available
-        ) if char.always_available else ""
-
-        for _lvl, _slots in sorted(char.spell_slots.items()):
-            if _slots <= 0:
-                continue
-            _boxes = " ".join("[ ]" for _ in range(min(int(_slots), 9)))
-            page2[f"spells_level_{_lvl}_header"] = f"{_ordinal(_lvl)} Level  {_boxes}"
-            page2[f"spells_level_{_lvl}_list"] = "\n".join(
-                s.name for s in char.spells if s.level == _lvl
-            )
-
-    features = get_character_features(char)
-    if features:
-        if magic_lines:
-            magic_lines.append("─" * 30)
-        for name, desc in features:
-            magic_lines.append(f"{name.upper()}: {desc}")
-
-    page2["magic_abilities"] = "\n".join(magic_lines)
+    # Magic & Special Abilities: drawn on canvas via _draw_spell_section() for all characters.
 
     return {"page1": page1, "page2": page2}
 
@@ -407,9 +571,20 @@ def fill_otg_sheet(char: Character, output_path: str | Path) -> Path:
     field_map = _load_field_map()
     values    = character_to_field_values(char)
 
-    overlays: list[bytes] = []
-    for page_key in ("page1", "page2"):
-        overlays.append(_render_page(field_map.get(page_key, {}), values.get(page_key, {})))
+    magic_spec = field_map.get("page2", {}).get("magic_abilities", {})
+    spell_stats_spec = field_map.get("page2", {}).get("spell_stats") or None
+    col_spec = field_map.get("page2", {}).get("spell_columns_start") or None
+    _char_ref = char
+
+    def page2_extra(c: canvas.Canvas, _c=_char_ref, _s=magic_spec,
+                    _ss=spell_stats_spec, _cs=col_spec) -> None:
+        _draw_spell_section(c, _c, _s, _ss, _cs)
+
+    overlays: list[bytes] = [
+        _render_page(field_map.get("page1", {}), values.get("page1", {})),
+        _render_page(field_map.get("page2", {}), values.get("page2", {}),
+                     extra_draw=page2_extra),
+    ]
 
     blank  = PdfReader(str(SHEET_PDF))
     writer = PdfWriter()

@@ -10,7 +10,10 @@ from engine.character import (
     FeatureEntry, SpellEntry,
 )
 from engine.rules import derive_stats
-from pdf.filler import character_to_field_values, fill_otg_sheet, SHEET_PDF
+from pdf.filler import (
+    character_to_field_values, fill_otg_sheet, SHEET_PDF,
+    _spell_effect_summary, _build_spell_columns,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -317,74 +320,103 @@ class TestPage2Attacks:
 
 class TestPage2FeaturesAndMagic:
     def test_features_in_magic_abilities(self):
-        # Class features now appear in magic_abilities, not features_traits
+        # Features rendered on canvas via _draw_spell_section; verify source data is correct
+        from engine.rules import get_character_features
         char = _make_fighter()
-        v = character_to_field_values(char)
-        magic = v["page2"]["magic_abilities"]
-        assert "FIGHTING STYLE" in magic
-        assert "SECOND WIND" in magic
+        feats = get_character_features(char)
+        feat_names = [n for n, _ in feats]
+        assert any("Fighting Style" in n for n in feat_names)
+        assert any("Second Wind" in n for n in feat_names)
 
     def test_non_caster_magic_starts_with_no_spellcasting(self):
+        # Canvas renderer draws "No spellcasting."; magic_abilities absent from field values
         char = _make_fighter()
         v = character_to_field_values(char)
-        assert v["page2"]["magic_abilities"].startswith("No spellcasting.")
+        assert "magic_abilities" not in v["page2"]
 
     def test_non_caster_magic_has_features_after_divider(self):
+        # Features list is non-empty; canvas renderer draws them below divider
+        from engine.rules import get_character_features
         char = _make_fighter()
-        v = character_to_field_values(char)
-        magic = v["page2"]["magic_abilities"]
-        assert "─" in magic
-        assert "FIGHTING STYLE" in magic
+        feats = get_character_features(char)
+        assert len(feats) > 0
 
-    def test_caster_has_spell_stats(self):
+    def test_caster_has_no_spell_fields_in_page2(self):
+        # Caster spell content is drawn directly via _draw_spell_section(); not in the dict
         char = _make_wizard()
         v = character_to_field_values(char)
-        # Wizard lv3, INT 16 → mod +3, prof +2 → atk +5, dc 13
-        assert "spell_stats" in v["page2"]
-        assert "+5" in v["page2"]["spell_stats"]
-        assert "13" in v["page2"]["spell_stats"]
+        for key in ("spell_stats", "cantrips_header", "cantrips_list",
+                    "spells_level_1_header", "spells_level_1_list",
+                    "spells_level_2_header", "spells_level_2_list",
+                    "magic_abilities"):
+            assert key not in v["page2"], f"Unexpected key in caster page2: {key}"
 
-    def test_caster_has_cantrips_header(self):
+
+class TestSpellEffectSummary:
+    def test_damage_effect(self):
+        sp = SpellEntry(level=1, name="Scorching Ray", effect_dmg="2d6 fire")
+        assert _spell_effect_summary(sp) == "2d6 fire"
+
+    def test_concentration_flag(self):
+        sp = SpellEntry(level=1, name="Hold Person", effect_dmg="Restrained", flags="C S")
+        summary = _spell_effect_summary(sp)
+        assert "Restrained" in summary
+        assert "(C)" in summary
+
+    def test_no_effect(self):
+        sp = SpellEntry(level=0, name="Prestidigitation")
+        assert _spell_effect_summary(sp) == ""
+
+    def test_concentration_only(self):
+        sp = SpellEntry(level=1, name="Bless", flags="C")
+        assert _spell_effect_summary(sp) == "(C)"
+
+    def test_truncation(self):
+        sp = SpellEntry(level=1, name="X", effect_dmg="a" * 25)
+        assert len(_spell_effect_summary(sp)) <= 20
+
+
+class TestBuildSpellColumns:
+    def test_cantrips_column_header(self):
         char = _make_wizard()
-        v = character_to_field_values(char)
-        assert v["page2"]["cantrips_header"] == "Cantrips (At Will)"
+        char.always_available = [SpellEntry(level=0, name="Fire Bolt", effect_dmg="1d10 fire")]
+        cols = _build_spell_columns(char)
+        assert cols[0]["header"] == "CANTRIPS (AT WILL)"
+        assert cols[0]["slots"] == 0
+        assert any("Fire Bolt" in e for e in cols[0]["entries"])
 
-    def test_caster_cantrips_list(self):
+    def test_cantrip_entry_includes_effect(self):
         char = _make_wizard()
-        char.always_available = [
-            SpellEntry(level=0, name="Fire Bolt"),
-            SpellEntry(level=0, name="Prestidigitation"),
-        ]
-        v = character_to_field_values(char)
-        assert "Fire Bolt" in v["page2"]["cantrips_list"]
-        assert "Prestidigitation" in v["page2"]["cantrips_list"]
+        char.always_available = [SpellEntry(level=0, name="Fire Bolt", effect_dmg="1d10 fire")]
+        cols = _build_spell_columns(char)
+        assert "Fire Bolt — 1d10 fire" in cols[0]["entries"]
 
-    def test_caster_level1_header_has_slots(self):
+    def test_level1_header_has_slot_boxes(self):
         char = _make_wizard()  # level 3 → 4 level-1 slots
-        v = character_to_field_values(char)
-        hdr = v["page2"]["spells_level_1_header"]
-        assert "1st" in hdr
-        assert hdr.count("[ ]") == 4
+        cols = _build_spell_columns(char)
+        lvl1 = next(c for c in cols if "1ST" in c["header"])
+        assert lvl1["header"] == "1ST LEVEL"
+        assert lvl1["slots"] == 4
 
-    def test_caster_level1_spell_list(self):
-        char = _make_wizard()
-        char.spells = [SpellEntry(level=1, name="Magic Missile")]
-        v = character_to_field_values(char)
-        assert "Magic Missile" in v["page2"]["spells_level_1_list"]
-
-    def test_caster_level2_header_has_slots(self):
+    def test_level2_header_has_slot_boxes(self):
         char = _make_wizard()  # level 3 → 2 level-2 slots
-        v = character_to_field_values(char)
-        hdr = v["page2"]["spells_level_2_header"]
-        assert "2nd" in hdr
-        assert hdr.count("[ ]") == 2
+        cols = _build_spell_columns(char)
+        lvl2 = next(c for c in cols if "2ND" in c["header"])
+        assert lvl2["header"] == "2ND LEVEL"
+        assert lvl2["slots"] == 2
 
-    def test_caster_has_magic_abilities_with_features(self):
+    def test_spell_entry_with_effect(self):
         char = _make_wizard()
-        v = character_to_field_values(char)
-        # Casters now also get a magic_abilities block containing features
-        assert "magic_abilities" in v["page2"]
-        assert "SPELLBOOK" in v["page2"]["magic_abilities"]
+        char.spells = [SpellEntry(level=1, name="Magic Missile", effect_dmg="3d4+3 force")]
+        cols = _build_spell_columns(char)
+        lvl1 = next(c for c in cols if "1ST" in c["header"])
+        assert "Magic Missile — 3d4+3 force" in lvl1["entries"]
+
+    def test_no_cantrips_column_when_empty(self):
+        char = _make_wizard()
+        char.always_available = []
+        cols = _build_spell_columns(char)
+        assert all("CANTRIPS" not in c["header"] for c in cols)
 
 
 class TestPronouns:

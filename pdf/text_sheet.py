@@ -72,6 +72,75 @@ def _wrap(text: str, indent: int = 2) -> list[str]:
     return lines
 
 
+def _effect_summary(sp) -> str:
+    """Brief effect summary (≤20 chars) for a SpellEntry."""
+    flags = (getattr(sp, "flags", "") or "").split()
+    conc = " (C)" if "C" in flags else ""
+    effect_dmg = (getattr(sp, "effect_dmg", "") or "").strip()
+    if effect_dmg:
+        return (effect_dmg[:18 - len(conc)] + conc)[:20]
+    return conc.strip()
+
+
+def _spell_columns(char: Character) -> list[dict]:
+    """Build column data for the 4-column spell layout."""
+    ordinals = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th"]
+    columns: list[dict] = []
+
+    if char.always_available:
+        entries = []
+        for sp in char.always_available:
+            eff = _effect_summary(sp)
+            entries.append(sp.name + (f" — {eff}" if eff else ""))
+        columns.append({"header": "CANTRIPS (AT WILL)", "entries": entries, "slots": 0})
+
+    spells_by_level: dict[int, list] = {}
+    for sp in char.spells:
+        spells_by_level.setdefault(sp.level, []).append(sp)
+
+    for lvl, slots in sorted(char.spell_slots.items()):
+        if slots <= 0:
+            continue
+        ord_str = ordinals[min(lvl - 1, 8)]
+        boxes = "☐" * min(slots, 9)
+        header = f"{ord_str.upper()} LEVEL  {boxes}"
+        entries = []
+        for sp in spells_by_level.get(lvl, []):
+            eff = _effect_summary(sp)
+            entries.append(sp.name + (f" — {eff}" if eff else ""))
+        columns.append({"header": header, "entries": entries, "slots": slots})
+
+    return columns
+
+
+def _render_spell_columns(columns: list[dict], col_width: int = 22) -> list[str]:
+    """Render spell columns as fixed-width text lines, 4 columns per row."""
+    if not columns:
+        return []
+    lines: list[str] = []
+    row = columns[:4]
+
+    # Header row
+    header_row = "".join(col["header"][:col_width].ljust(col_width) for col in row)
+    lines.append("  " + header_row.rstrip())
+
+    # Spell entries (columns aligned by row index)
+    max_entries = max(len(col["entries"]) for col in row)
+    for i in range(max_entries):
+        entry_row = ""
+        for col in row:
+            entry = col["entries"][i][:col_width - 1] if i < len(col["entries"]) else ""
+            entry_row += entry.ljust(col_width)
+        lines.append("  " + entry_row.rstrip())
+
+    # Recurse for overflow columns beyond the first 4
+    if len(columns) > 4:
+        lines.append("")
+        lines.extend(_render_spell_columns(columns[4:], col_width))
+
+    return lines
+
+
 def generate_text_sheet(char: Character) -> str:
     """Return a plain-text character sheet string."""
     derive_stats(char)
@@ -251,52 +320,16 @@ def generate_text_sheet(char: Character) -> str:
         }
         _spell_mod_txt = _mod(_ab_score_map_txt.get((char.spellcasting_ability or "").lower(), 10))
         lines.append(
-            f"  Modifier: {_sign(_spell_mod_txt)}  |  "
-            f"Attack Bonus: {_sign(char.spell_attack_bonus)}  |  "
+            f"  Spell Mod: {_sign(_spell_mod_txt)}  |  "
+            f"Attack: {_sign(char.spell_attack_bonus)}  |  "
             f"Save DC: {char.spell_save_dc}"
         )
         lines.append("")
 
-        # Build 4-column layout: cantrips | lvl1 | lvl2 | lvl3 (etc.)
-        COL_W = 22
-        INDENT = "  "
-
-        def _ordinal_txt(n: int) -> str:
-            return f"{n}{({1:'st',2:'nd',3:'rd'}).get(n,'th')}"
-
-        # Collect columns: each is (header_line, [spell_names])
-        _cols: list[tuple[str, list[str]]] = []
-
-        # Cantrips
-        _cantrip_names = [s.name for s in char.always_available]
-        _cols.append(("CANTRIPS (AT WILL)", _cantrip_names))
-
-        # Spell levels
-        for _lvl, _slots in sorted(char.spell_slots.items()):
-            if _slots <= 0:
-                continue
-            _boxes = " ".join("[ ]" for _ in range(min(int(_slots), 9)))
-            _hdr = f"{_ordinal_txt(_lvl).upper()} LEVEL {_boxes}"
-            _level_spells = [s.name for s in char.spells if s.level == _lvl]
-            _cols.append((_hdr, _level_spells))
-
-        # Render columns in rows of 4
-        for _row_start in range(0, len(_cols), 4):
-            _row_cols = _cols[_row_start:_row_start + 4]
-            # Header row
-            hdr_line = INDENT + "".join(
-                _col_hdr.ljust(COL_W) for _col_hdr, _ in _row_cols
-            )
-            lines.append(hdr_line)
-            # Spell rows
-            _max_spells = max((len(_sp) for _, _sp in _row_cols), default=0)
-            for _si in range(_max_spells):
-                row_line = INDENT + "".join(
-                    (_sp[_si] if _si < len(_sp) else "").ljust(COL_W)
-                    for _, _sp in _row_cols
-                )
-                lines.append(row_line)
-            lines.append("")
+        # 4-column spell layout with effect summaries
+        spell_cols = _spell_columns(char)
+        lines.extend(_render_spell_columns(spell_cols, col_width=22))
+        lines.append("")
 
     # Features & Traits (class + racial + background with descriptions)
     char_features = get_character_features(char)
