@@ -143,6 +143,22 @@ def _draw_text(
     return y
 
 
+def _draw_marker(c: canvas.Canvas, symbol: str, x: float, y: float,
+                 font_size: float, color: Any | None = None) -> None:
+    """Draw a proficiency indicator as an SVG-spec circle.
+
+    r=6pt, 1px white stroke. x, y from the field map is the circle centre.
+    Both ● (proficient) and ◆ (expert) render as the same circle.
+    """
+    if not symbol or symbol not in ("●", "◆"):
+        return
+    fill = color if color is not None else _DEFAULT_COLOR
+    c.setFillColor(fill)
+    c.setStrokeColor(HexColor("#FFFFFF"))
+    c.setLineWidth(0.75)
+    c.circle(x, y, 6, fill=1, stroke=1)
+
+
 def _draw_inventory_with_checkboxes(
     c: canvas.Canvas,
     items: list,
@@ -464,6 +480,9 @@ def _render_page(fields_data: dict, values: dict[str, Any],
         field_color = HexColor(raw_color) if raw_color else None
         text = str(value)
         font_size = spec.get("font_size", 9)
+        if text in ("●", "◆"):
+            _draw_marker(c, text, spec["x"], spec["y"], font_size, field_color)
+            continue
         if spec.get("max_width") and not spec.get("multiline", False):
             font = FONT_BOLD if spec.get("bold", False) else FONT_REGULAR
             text, font_size = _fit_single_line(c, text, font, font_size, spec["max_width"])
