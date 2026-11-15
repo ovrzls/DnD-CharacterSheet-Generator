@@ -5,11 +5,48 @@
    Body text:    #1a1a1a   (contrast vs white: 18:1 ✓)
    ============================================================ */
 
+/* ── Typeface ─────────────────────────────────────────────── */
+/* Barlow Condensed (SIL Open Font License — see fonts/barlow-condensed/OFL.txt).
+   font-display: swap shows the fallback font straight away, so text is never
+   invisible while the font loads. */
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../fonts/barlow-condensed/BarlowCondensed-Regular.woff2") format("woff2"),
+       url("../fonts/barlow-condensed/BarlowCondensed-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: italic; font-weight: 400; font-display: swap;
+  src: url("../fonts/barlow-condensed/BarlowCondensed-Italic.woff2") format("woff2"),
+       url("../fonts/barlow-condensed/BarlowCondensed-Italic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal; font-weight: 500; font-display: swap;
+  src: url("../fonts/barlow-condensed/BarlowCondensed-Medium.woff2") format("woff2"),
+       url("../fonts/barlow-condensed/BarlowCondensed-Medium.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal; font-weight: 600; font-display: swap;
+  src: url("../fonts/barlow-condensed/BarlowCondensed-SemiBold.woff2") format("woff2"),
+       url("../fonts/barlow-condensed/BarlowCondensed-SemiBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../fonts/barlow-condensed/BarlowCondensed-Bold.woff2") format("woff2"),
+       url("../fonts/barlow-condensed/BarlowCondensed-Bold.ttf") format("truetype");
+}
+
 /* ── Reset ────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; }
+/* 112.5% = 18px at the browser default and still follows the reader's own
+   text-size setting. Larger than before because condensed letters read smaller. */
+html { font-size: 112.5%; }
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Barlow Condensed", system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.6;
   color: #1a1a1a;
   background: #f0f5f5;

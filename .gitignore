@@ -66,3 +66,7 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+
+# Claude desktop app
+.claude/
+Claude outputs/

@@ -9,29 +9,30 @@
   "page1": {
     "_comment": "Teal page — identity, abilities, skills, inventory",
 
-    "name":        {"x": 281, "y": 710, "font_size": 11, "align": "left",   "color": "#851846"},
-    "pronouns":    {"x": 481, "y": 710, "font_size": 11, "align": "left",   "color": "#851846"},
-    "char_class":  {"x": 285, "y": 662, "font_size": 11, "align": "left",   "color": "#851846"},
-    "level":       {"x": 393, "y": 662, "font_size": 11, "align": "left",   "color": "#851846"},
-    "xp":          {"x": 473, "y": 662, "font_size": 10, "align": "left",   "color": "#851846"},
+    "name":        {"x": 256, "y": 710, "font_size": 12, "align": "left",   "color": "#851846", "max_width": 143,
+                    "_note": "Name and pronouns share this slot. max_width stops them running into the species label; long text shrinks to 8 pt, then is cut."},
+    "species": { "x": 451, "y": 710, "font_size": 12, "align": "left", "color": "#851846" },
+    "char_class":  {"x": 256, "y": 662, "font_size": 12, "align": "left",   "color": "#851846"},
+    "level":       {"x": 393, "y": 662, "font_size": 12, "align": "left",   "color": "#851846"},
+    "xp":          {"x": 466, "y": 662, "font_size": 12, "align": "left",   "color": "#851846"},
     "inspiration": {"x": 229, "y": 625, "font_size":  9, "align": "left"},
 
     "str_score":  {"x":  87, "y": 550, "font_size": 14, "align": "center", "bold": true, "color": "#851846"},
-    "str_bonus":  {"x": 221, "y": 553, "font_size": 11, "align": "center", "color": "#851846"},
+    "str_bonus":  {"x": 221, "y": 552, "font_size": 14, "align": "center", "color": "#851846"},
     "dex_score":  {"x":  87, "y": 519, "font_size": 14, "align": "center", "bold": true, "color": "#851846"},
-    "dex_bonus":  {"x": 221, "y": 524, "font_size": 11, "align": "center", "color": "#851846"},
+    "dex_bonus":  {"x": 221, "y": 523, "font_size": 14, "align": "center", "color": "#851846"},
     "con_score":  {"x":  87, "y": 488, "font_size": 14, "align": "center", "bold": true, "color": "#851846"},
-    "con_bonus":  {"x": 221, "y": 495, "font_size": 11, "align": "center", "color": "#851846"},
+    "con_bonus":  {"x": 221, "y": 494, "font_size": 14, "align": "center", "color": "#851846"},
     "int_score":  {"x":  87, "y": 458, "font_size": 14, "align": "center", "bold": true, "color": "#851846"},
-    "int_bonus":  {"x": 221, "y": 462, "font_size": 11, "align": "center", "color": "#851846"},
+    "int_bonus":  {"x": 221, "y": 461, "font_size": 14, "align": "center", "color": "#851846"},
     "wis_score":  {"x":  87, "y": 428, "font_size": 14, "align": "center", "bold": true, "color": "#851846"},
-    "wis_bonus":  {"x": 221, "y": 431, "font_size": 11, "align": "center", "color": "#851846"},
+    "wis_bonus":  {"x": 221, "y": 430, "font_size": 14, "align": "center", "color": "#851846"},
     "cha_score":  {"x":  87, "y": 396, "font_size": 14, "align": "center", "bold": true, "color": "#851846"},
-    "cha_bonus":  {"x": 221, "y": 400, "font_size": 11, "align": "center", "color": "#851846"},
+    "cha_bonus":  {"x": 221, "y": 399, "font_size": 14, "align": "center", "color": "#851846"},
     "prof_bonus": {"x": 222, "y": 350, "font_size": 14, "align": "center", "color": "#851846"},
 
-    "proficiencies_text": {"x":  62, "y": 327, "font_size": 7, "align": "left", "multiline": true, "max_width": 195, "line_height": 10},
-    "senses":             {"x":  72, "y": 194, "font_size": 7, "align": "left", "multiline": true, "max_width": 170, "line_height": 10},
+    "proficiencies_text": {"x": 52, "y": 327, "font_size": 11, "align": "left", "multiline": true, "max_width": 183, "line_height": 13, "paragraph_spacing_em": 0.5},
+    "senses":             {"x":  72, "y": 194, "font_size": 11, "align": "left", "multiline": true, "max_width": 170, "line_height": 17},
 
     "passive_perception":    {"x": 62, "y": 108, "font_size": 11, "align": "center", "color": "#851846"},
     "passive_investigation": {"x": 62, "y":  80, "font_size": 11, "align": "center", "color": "#851846"},
@@ -75,9 +76,9 @@
     "skill_prof_survival":        {"x": 439.5, "y": 349, "font_size":  9, "align": "center", "color": "#851846"},
     "skill_survival":             {"x": 463,   "y": 348, "font_size": 11, "align": "center", "color": "#851846"},
 
-    "inventory": {"x": 275, "y": 278, "font_size": 9, "align": "left", "type": "inventory", "line_height": 13, "max_width": 295},
-    "equipped":  {"x": 275, "y": 162, "font_size": 7, "align": "left", "type": "inventory", "line_height": 12, "max_width": 295},
-    "money":     {"x": 456, "y":  55, "font_size":  9, "align": "left"},
+    "inventory": {"x": 275, "y": 278, "font_size": 11, "align": "left", "type": "inventory", "line_height": 13, "max_width": 285},
+    "equipped":  {"x": 275, "y": 162, "font_size": 11, "align": "left", "type": "inventory", "line_height": 12, "max_width": 285},
+    "money":     {"x": 431, "y":  55, "font_size": 11, "align": "left"},
 
     "attunement_1": {"x": 295, "y": 51, "font_size": 7, "align": "center"},
     "attunement_2": {"x": 328, "y": 51, "font_size": 7, "align": "center"},
@@ -87,58 +88,58 @@
   "page2": {
     "_comment": "Pink/magenta page — combat stats, saving throws, attacks, features, magic",
 
-    "initiative":  {"x":  83, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#851846"},
-    "armor_class": {"x": 210, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#851846"},
-    "hit_points":  {"x": 366, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#851846"},
-    "movement":    {"x": 518, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#851846"},
+    "initiative":  {"x":  83, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#1c4d4d"},
+    "armor_class": {"x": 210, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#1c4d4d"},
+    "hit_points":  {"x": 366, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#1c4d4d"},
+    "movement":    {"x": 518, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#1c4d4d"},
 
-    "num_attacks": {"x": 375, "y": 534, "font_size": 11, "align": "center", "bold": true},
+    "num_attacks": {"x": 375, "y": 534, "font_size": 14, "align": "center", "bold": true},
 
-    "save_prof_str": {"x": 147, "y": 626, "font_size":  9, "align": "center", "color": "#851846"},
-    "save_str":      {"x": 175, "y": 626, "font_size": 11, "align": "center", "color": "#851846"},
-    "save_prof_con": {"x": 292, "y": 626, "font_size":  9, "align": "center", "color": "#851846"},
-    "save_con":      {"x": 319, "y": 626, "font_size": 11, "align": "center", "color": "#851846"},
-    "save_prof_wis": {"x": 449, "y": 626, "font_size":  9, "align": "center", "color": "#851846"},
-    "save_wis":      {"x": 480, "y": 626, "font_size": 11, "align": "center", "color": "#851846"},
-    "save_prof_dex": {"x": 147, "y": 596, "font_size":  9, "align": "center", "color": "#851846"},
-    "save_dex":      {"x": 175, "y": 595, "font_size": 11, "align": "center", "color": "#851846"},
-    "save_prof_int": {"x": 292, "y": 596, "font_size":  9, "align": "center", "color": "#851846"},
-    "save_int":      {"x": 319, "y": 595, "font_size": 11, "align": "center", "color": "#851846"},
-    "save_prof_cha": {"x": 449, "y": 596, "font_size":  9, "align": "center", "color": "#851846"},
-    "save_cha":      {"x": 480, "y": 595, "font_size": 11, "align": "center", "color": "#851846"},
+    "save_prof_str": {"x": 147, "y": 626, "font_size":  9, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_str":      {"x": 175, "y": 626, "font_size": 14, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_prof_con": {"x": 292, "y": 626, "font_size":  9, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_con":      {"x": 319, "y": 626, "font_size": 14, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_prof_wis": {"x": 449, "y": 626, "font_size":  9, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_wis":      {"x": 480, "y": 626, "font_size": 14, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_prof_dex": {"x": 147, "y": 596, "font_size":  9, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_dex":      {"x": 175, "y": 595, "font_size": 14, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_prof_int": {"x": 292, "y": 596, "font_size":  9, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_int":      {"x": 319, "y": 595, "font_size": 14, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_prof_cha": {"x": 449, "y": 596, "font_size":  9, "align": "center", "bold": true, "color": "#1c4d4d"},
+    "save_cha":      {"x": 480, "y": 595, "font_size": 14, "align": "center", "bold": true, "color": "#1c4d4d"},
 
-    "atk1_weapon": {"x":  55, "y": 480, "font_size": 10, "align": "left"},
-    "atk1_hit":    {"x": 189, "y": 480, "font_size": 10, "align": "center"},
-    "atk1_dmg":    {"x": 230, "y": 480, "font_size": 10, "align": "center"},
-    "atk1_desc":   {"x": 288, "y": 480, "font_size":  9, "align": "left"},
+    "atk1_weapon": {"x":  55, "y": 480, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
+    "atk1_hit":    {"x": 189, "y": 480, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk1_dmg":    {"x": 230, "y": 480, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk1_desc":   {"x": 275, "y": 480, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
 
-    "atk2_weapon": {"x":  55, "y": 449, "font_size": 10, "align": "left"},
-    "atk2_hit":    {"x": 189, "y": 449, "font_size": 10, "align": "center"},
-    "atk2_dmg":    {"x": 230, "y": 449, "font_size": 10, "align": "center"},
-    "atk2_desc":   {"x": 288, "y": 449, "font_size":  9, "align": "left"},
+    "atk2_weapon": {"x":  55, "y": 449, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
+    "atk2_hit":    {"x": 189, "y": 449, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk2_dmg":    {"x": 230, "y": 449, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk2_desc":   {"x": 275, "y": 449, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
 
-    "atk3_weapon": {"x":  55, "y": 416, "font_size": 10, "align": "left"},
-    "atk3_hit":    {"x": 189, "y": 416, "font_size": 10, "align": "center"},
-    "atk3_dmg":    {"x": 230, "y": 416, "font_size": 10, "align": "center"},
-    "atk3_desc":   {"x": 288, "y": 416, "font_size":  9, "align": "left"},
+    "atk3_weapon": {"x":  55, "y": 416, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
+    "atk3_hit":    {"x": 189, "y": 416, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk3_dmg":    {"x": 230, "y": 416, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk3_desc":   {"x": 275, "y": 416, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
 
-    "atk4_weapon": {"x":  55, "y": 385, "font_size": 10, "align": "left"},
-    "atk4_hit":    {"x": 189, "y": 385, "font_size": 10, "align": "center"},
-    "atk4_dmg":    {"x": 230, "y": 385, "font_size": 10, "align": "center"},
-    "atk4_desc":   {"x": 288, "y": 385, "font_size":  9, "align": "left"},
+    "atk4_weapon": {"x":  55, "y": 385, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
+    "atk4_hit":    {"x": 189, "y": 385, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk4_dmg":    {"x": 230, "y": 385, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk4_desc":   {"x": 275, "y": 385, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
 
-    "atk5_weapon": {"x":  55, "y": 354, "font_size": 10, "align": "left"},
-    "atk5_hit":    {"x": 189, "y": 354, "font_size": 10, "align": "center"},
-    "atk5_dmg":    {"x": 230, "y": 354, "font_size": 10, "align": "center"},
-    "atk5_desc":   {"x": 288, "y": 354, "font_size":  9, "align": "left"},
+    "atk5_weapon": {"x":  55, "y": 354, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
+    "atk5_hit":    {"x": 189, "y": 354, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk5_dmg":    {"x": 230, "y": 354, "font_size": 14, "align": "center", "color": "#1c4d4d"},
+    "atk5_desc":   {"x": 275, "y": 354, "font_size": 14, "align": "left",   "color": "#1c4d4d"},
 
     "magic_abilities": {
-      "x": 50, "y": 230, "font_size": 26, "align": "left",
-      "multiline": true, "max_width": 540, "line_height": 9
+      "x": 50, "y": 230, "font_size": 9.5, "align": "left",
+      "multiline": true, "max_width": 512, "line_height": 9
     },
 
     "spell_columns_start": {
-      "x": 50, "y": 210,
+      "x": 50, "y": 248,
       "_note": "Top-left anchor for spell columns. Adjust y to move columns up/down independently of magic_abilities heading."
     },
 
@@ -146,34 +147,34 @@
 
     "spell_stats":      {"x":  244, "y": 273, "font_size": 11, "align": "left"},
 
-    "cantrips_header":       {"x":  54, "y": 263, "font_size": 8, "align": "left", "bold": true},
-    "cantrips_list":         {"x":  54, "y": 230, "font_size": 7, "align": "left", "multiline": true, "max_width": 130, "line_height": 10},
+    "cantrips_header":       {"x":  54, "y": 263, "font_size": 10, "align": "left", "bold": true},
+    "cantrips_list":         {"x":  54, "y": 230, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_1_header": {"x": 198, "y": 263, "font_size": 8, "align": "left", "bold": true},
-    "spells_level_1_list":   {"x": 198, "y": 230, "font_size": 7, "align": "left", "multiline": true, "max_width": 130, "line_height": 10},
+    "spells_level_1_header": {"x": 198, "y": 263, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_1_list":   {"x": 198, "y": 230, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_2_header": {"x": 340, "y": 263, "font_size": 8, "align": "left", "bold": true},
-    "spells_level_2_list":   {"x": 340, "y": 230, "font_size": 7, "align": "left", "multiline": true, "max_width": 130, "line_height": 10},
+    "spells_level_2_header": {"x": 340, "y": 263, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_2_list":   {"x": 340, "y": 230, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_3_header": {"x": 470, "y": 263, "font_size": 8, "align": "left", "bold": true},
-    "spells_level_3_list":   {"x": 470, "y": 230, "font_size": 7, "align": "left", "multiline": true, "max_width": 130, "line_height": 10},
+    "spells_level_3_header": {"x": 470, "y": 263, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_3_list":   {"x": 470, "y": 230, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_4_header": {"x":  54, "y": 147, "font_size": 6, "align": "left", "bold": true},
-    "spells_level_4_list":   {"x":  54, "y": 136, "font_size": 6, "align": "left", "multiline": true, "max_width": 130, "line_height": 9},
+    "spells_level_4_header": {"x":  54, "y": 147, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_4_list":   {"x":  54, "y": 136, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_5_header": {"x": 198, "y": 147, "font_size": 6, "align": "left", "bold": true},
-    "spells_level_5_list":   {"x": 198, "y": 136, "font_size": 6, "align": "left", "multiline": true, "max_width": 130, "line_height": 9},
+    "spells_level_5_header": {"x": 198, "y": 147, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_5_list":   {"x": 198, "y": 136, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_6_header": {"x": 340, "y": 147, "font_size": 6, "align": "left", "bold": true},
-    "spells_level_6_list":   {"x": 340, "y": 136, "font_size": 6, "align": "left", "multiline": true, "max_width": 130, "line_height": 9},
+    "spells_level_6_header": {"x": 340, "y": 147, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_6_list":   {"x": 340, "y": 136, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_7_header": {"x": 470, "y": 147, "font_size": 6, "align": "left", "bold": true},
-    "spells_level_7_list":   {"x": 470, "y": 136, "font_size": 6, "align": "left", "multiline": true, "max_width": 130, "line_height": 9},
+    "spells_level_7_header": {"x": 470, "y": 147, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_7_list":   {"x": 470, "y": 136, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_8_header": {"x":  54, "y":  80, "font_size": 6, "align": "left", "bold": true},
-    "spells_level_8_list":   {"x":  54, "y":  69, "font_size": 6, "align": "left", "multiline": true, "max_width": 130, "line_height": 9},
+    "spells_level_8_header": {"x":  54, "y":  80, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_8_list":   {"x":  54, "y":  69, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25},
 
-    "spells_level_9_header": {"x": 198, "y":  80, "font_size": 6, "align": "left", "bold": true},
-    "spells_level_9_list":   {"x": 198, "y":  69, "font_size": 6, "align": "left", "multiline": true, "max_width": 130, "line_height": 9}
+    "spells_level_9_header": {"x": 198, "y":  80, "font_size": 10, "align": "left", "bold": true},
+    "spells_level_9_list":   {"x": 198, "y":  69, "font_size":  9, "align": "left", "multiline": true, "max_width": 130, "line_height": 11.25}
   }
 }

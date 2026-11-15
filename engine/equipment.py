@@ -177,6 +177,16 @@ CLASS_OPTIONS: dict[str, dict] = {
     },
 }
 
+# What a character wears when their class starts with no armor. Listed first in
+# the inventory, where armor would otherwise be. Clothing only: it has no armor
+# type and no AC value, so it never changes Armor Class.
+UNARMORED_OUTFITS: dict[str, str] = {
+    "barbarian": "loose breeches and wrapped boots",
+    "monk":      "rough-linen garb and soft-soled slippers",
+    "wizard":    "light traveling cloak fastened with a metal clasp and simple sandals",
+    "sorcerer":  "long silk tunic with sweeping cape and soft boots",
+}
+
 # Maps armor keys to D&D armor category (used to set EquipmentItem.armor_type)
 _ARMOR_TYPE: dict[str, str] = {
     "leather":         "light",
@@ -337,6 +347,8 @@ def _build_equipment(char_class: str, ability_scores: AbilityScores,
             armor_type=_ARMOR_TYPE.get(armor_key, ""),
             ac_base=ARMOR[armor_key]["base_ac"],
         ))
+    elif cls in UNARMORED_OUTFITS:
+        items.append(EquipmentItem(name=f"Unarmored: {UNARMORED_OUTFITS[cls]}", source="otg"))
     if has_shield:
         items.append(EquipmentItem(name="Shield", source="srd", is_shield=True, ac_base=2))
 

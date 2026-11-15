@@ -18,6 +18,8 @@ from typing import Any
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.colors import HexColor
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader, PdfWriter
 import pypdf.generic
 
@@ -27,6 +29,30 @@ from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS, get_char
 _HERE = Path(__file__).parent
 SHEET_PDF = _HERE / "field_maps" / "OtG-Revised-Charactersheet.pdf"
 FIELD_MAP = _HERE / "field_maps" / "otg_fields.json"
+
+# Sheet typeface. The font files live with the web assets so the wizard and the
+# PDF share one copy. If they are missing, fall back to the built-in Helvetica
+# so the sheet still renders.
+FONT_DIR = _HERE.parent / "ui" / "static" / "fonts" / "barlow-condensed"
+
+
+def _register_fonts() -> tuple[str, str]:
+    """Register Barlow Condensed with reportlab. Returns (regular, bold) font names."""
+    regular = FONT_DIR / "BarlowCondensed-Medium.ttf"
+    bold = FONT_DIR / "BarlowCondensed-Bold.ttf"
+    try:
+        pdfmetrics.registerFont(TTFont("BarlowCondensed", str(regular)))
+        pdfmetrics.registerFont(TTFont("BarlowCondensed-Bold", str(bold)))
+    except Exception:
+        return "Helvetica", "Helvetica-Bold"
+    return "BarlowCondensed", "BarlowCondensed-Bold"
+
+
+FONT_REGULAR, FONT_BOLD = _register_fonts()
+
+# Body text size for the Magic & Special Abilities box when the field map
+# does not set one (magic_abilities.font_size).
+MAGIC_BODY_FONT = 9.5
 
 _DEFAULT_COLOR = HexColor("#1a1a1a")
 
@@ -54,10 +80,17 @@ def _draw_wrapped(
     font_name: str,
     max_width: float,
     line_height: int,
+    paragraph_spacing: float = 0.0,
 ) -> float:
-    """Draw word-wrapped text. Returns the y coordinate after the last line."""
+    """Draw word-wrapped text. Returns the y coordinate after the last line.
+
+    Each "\n" starts a new paragraph; paragraph_spacing (points) is the extra
+    gap left between one paragraph and the next.
+    """
     cur_y = y
-    for paragraph in str(text).split("\n"):
+    for i, paragraph in enumerate(str(text).split("\n")):
+        if i > 0:
+            cur_y -= paragraph_spacing
         words = paragraph.split()
         if not words:
             cur_y -= line_height
@@ -90,15 +123,17 @@ def _draw_text(
     line_height: float = 11,
     bold: bool = False,
     color: Any | None = None,
+    paragraph_spacing: float = 0.0,
 ) -> float:
     """Draw text. Returns y after the last drawn line (useful for multiline)."""
     if not text:
         return y
-    font_name = "Helvetica-Bold" if bold else "Helvetica"
+    font_name = FONT_BOLD if bold else FONT_REGULAR
     c.setFont(font_name, font_size)
     c.setFillColor(color if color is not None else _DEFAULT_COLOR)
     if multiline and max_width:
-        return _draw_wrapped(c, str(text), x, y, font_size, font_name, max_width, line_height)
+        return _draw_wrapped(c, str(text), x, y, font_size, font_name, max_width,
+                             line_height, paragraph_spacing)
     elif align == "center":
         c.drawCentredString(x, y, str(text))
     elif align == "right":
@@ -115,8 +150,13 @@ def _draw_inventory_with_checkboxes(
     y: float,
     font_size: int,
     line_height: int,
+    max_width: float | None = None,
 ) -> None:
-    """Draw each item preceded by a small filled checkbox square."""
+    """Draw each item preceded by a small filled checkbox square.
+
+    max_width is the width of the whole row including the checkbox. An item too
+    long for one line wraps, with the following lines aligned under its text.
+    """
     checkbox_color = HexColor("#E8EAE7")
     stroke_color   = HexColor("#AAAAAA")
     text_color     = HexColor("#1a1a1a")
@@ -130,9 +170,14 @@ def _draw_inventory_with_checkboxes(
         c.setLineWidth(0.5)
         c.rect(x, cur_y - 1, checkbox_size, checkbox_size, fill=1, stroke=1)
         c.setFillColor(text_color)
-        c.setFont("Helvetica", font_size)
-        c.drawString(x + checkbox_size + gap, cur_y, str(item_text))
-        cur_y -= line_height
+        c.setFont(FONT_REGULAR, font_size)
+        text_x = x + checkbox_size + gap
+        if max_width:
+            cur_y = _draw_wrapped(c, str(item_text), text_x, cur_y, font_size,
+                                  FONT_REGULAR, max_width - checkbox_size - gap, line_height)
+        else:
+            c.drawString(text_x, cur_y, str(item_text))
+            cur_y -= line_height
 
 
 def _spell_effect_summary(sp) -> str:
@@ -145,6 +190,13 @@ def _spell_effect_summary(sp) -> str:
     return conc.strip()
 
 
+def _spell_entry_label(name: str, eff: str) -> str:
+    """Join spell name and effect; a bare "(C)" flag gets a space, not a dash."""
+    if not eff:
+        return name
+    return f"{name} {eff}" if eff.startswith("(") else f"{name} — {eff}"
+
+
 def _build_spell_columns(char: Character) -> list[dict]:
     """Return column data for the spell layout (cantrips + one column per slot level)."""
     columns: list[dict] = []
@@ -154,7 +206,7 @@ def _build_spell_columns(char: Character) -> list[dict]:
         entries = []
         for sp in char.always_available:
             eff = _spell_effect_summary(sp)
-            entries.append(sp.name + (f" — {eff}" if eff else ""))
+            entries.append(_spell_entry_label(sp.name, eff))
         columns.append({"header": "CANTRIPS (AT WILL)", "entries": entries, "slots": 0})
 
     spells_by_level: dict[int, list] = {}
@@ -169,7 +221,7 @@ def _build_spell_columns(char: Character) -> list[dict]:
         entries = []
         for sp in spells_by_level.get(lvl, []):
             eff = _spell_effect_summary(sp)
-            entries.append(sp.name + (f" — {eff}" if eff else ""))
+            entries.append(_spell_entry_label(sp.name, eff))
         columns.append({"header": header, "entries": entries, "slots": slots})
 
     return columns
@@ -182,6 +234,23 @@ def _trunc_to_width(c: canvas.Canvas, text: str, font: str, size: float, max_w: 
     while text and c.stringWidth(text.rstrip() + "…", font, size) > max_w:
         text = text[:-1]
     return text.rstrip() + "…"
+
+
+def _fit_spell_entry(c: canvas.Canvas, entry: str, font: str, size: float, max_w: float) -> str:
+    """Fit a "Name — effect" label into a column.
+
+    The spell name matters most, so when the full label is too wide the effect
+    is dropped (keeping the concentration flag) before the name is ever cut.
+    """
+    if c.stringWidth(entry, font, size) <= max_w:
+        return entry
+    if " — " in entry:
+        name, eff = entry.split(" — ", 1)
+        short = name + (" (C)" if eff.endswith("(C)") else "")
+        if c.stringWidth(short, font, size) <= max_w:
+            return short
+        entry = short
+    return _trunc_to_width(c, entry, font, size, max_w)
 
 
 def _draw_slot_boxes(c: canvas.Canvas, x: float, y: float, count: int,
@@ -215,14 +284,12 @@ def _draw_one_column_row(
         cx = x + i * (col_width + col_gap)
         _draw_text(c, col["header"], cx, y, font_size=header_font, bold=True)
         if col["slots"] > 0:
-            hdr_w = c.stringWidth(col["header"], "Helvetica-Bold", header_font)
+            hdr_w = c.stringWidth(col["header"], FONT_BOLD, header_font)
             _draw_slot_boxes(c, cx + hdr_w + 4, y - 1, col["slots"],
-                             size=header_font - 1, gap=2)
+                             size=header_font - 2, gap=2)
         entry_y = y - header_h
         for entry in col["entries"]:
-            max_chars = int(col_width / (entry_font * 0.6))
-            if len(entry) > max_chars:
-                entry = entry[:max_chars - 1] + "…"
+            entry = _fit_spell_entry(c, entry, FONT_REGULAR, entry_font, col_width)
             _draw_text(c, entry, cx, entry_y, font_size=entry_font)
             entry_y -= entry_h
 
@@ -257,12 +324,13 @@ def _draw_divider_block(
     y: float,
     width: float,
     color: str = "#CCCCCC",
+    pad: float = 8.0,
 ) -> float:
     """Draw a horizontal rule at (x, y). Returns height consumed (line + padding)."""
     c.setStrokeColor(HexColor(color))
     c.setLineWidth(0.3)
     c.line(x, y, x + width, y)
-    return 8.0
+    return pad
 
 
 def _draw_features_block(
@@ -279,7 +347,9 @@ def _draw_features_block(
     for name, desc in features:
         text = f"{name.upper()}: {desc}"
         start_y = y - total_height
-        final_y = _draw_wrapped(c, text, x, start_y, font_size, "Helvetica",
+        c.setFont(FONT_REGULAR, font_size)
+        c.setFillColor(_DEFAULT_COLOR)
+        final_y = _draw_wrapped(c, text, x, start_y, font_size, FONT_REGULAR,
                                 max_width, line_height)
         total_height += (start_y - final_y) + 2.0
     return total_height
@@ -297,6 +367,7 @@ def _draw_spell_section(
     x = float(eff.get("x", 50))
     y = float(eff.get("y", 230))
     max_width = float(magic_spec.get("max_width", 540))
+    body = float(magic_spec.get("font_size", MAGIC_BODY_FONT))
 
     # Spell stats drawn at its own fixed coordinates — outside the flow
     if spell_stats_spec and char.sheet_variant == "caster":
@@ -322,15 +393,37 @@ def _draw_spell_section(
     if char.sheet_variant == "caster":
         columns = _build_spell_columns(char)
         if columns:
-            cur_y -= _draw_spell_columns_block(c, x, cur_y, columns)
+            col_gap = 8.0
+            col_width = (max_width - 3 * col_gap) / 4
+            cur_y -= _draw_spell_columns_block(c, x, cur_y, columns,
+                                               col_width=col_width, col_gap=col_gap,
+                                               header_font=body, entry_font=body)
     else:
-        _draw_text(c, "No spellcasting.", x, cur_y, font_size=7)
-        cur_y -= 14.0
+        _draw_text(c, "No spellcasting.", x, cur_y, font_size=body)
+        cur_y -= body + 7.0
 
     features = get_character_features(char)
     if features:
-        cur_y -= _draw_divider_block(c, x, cur_y, max_width)
-        _draw_features_block(c, x, cur_y, features, max_width=max_width)
+        cur_y -= _draw_divider_block(c, x, cur_y, max_width, pad=body + 4.0)
+        _draw_features_block(c, x, cur_y, features, max_width=max_width,
+                             font_size=body, line_height=body + 2.0)
+
+
+def _name_with_pronouns(name: str, pronouns: str) -> str:
+    """Combine name and pronouns for the name slot, e.g. "Mira (she/her)"."""
+    name = (name or "").strip()
+    pronouns = (pronouns or "").strip()
+    if not pronouns:
+        return name
+    return f"{name} ({pronouns})" if name else pronouns
+
+
+def _fit_single_line(c: canvas.Canvas, text: str, font: str, size: float,
+                     max_w: float, min_size: float = 8.0) -> tuple[str, float]:
+    """Fit one line into max_w: shrink the font to min_size first, then cut with "…"."""
+    while size > min_size and c.stringWidth(text, font, size) > max_w:
+        size -= 0.5
+    return _trunc_to_width(c, text, font, size, max_w), size
 
 
 def _render_page(fields_data: dict, values: dict[str, Any],
@@ -339,6 +432,20 @@ def _render_page(fields_data: dict, values: dict[str, Any],
     c = canvas.Canvas(buf, pagesize=letter)
 
     for field_name, spec in fields_data.items():
+        if spec.get("type") == "label":
+            # Fixed label: optionally paint over printed artwork, then draw text.
+            cover = spec.get("cover")
+            if cover:
+                c.setFillColor(HexColor(spec.get("cover_color", "#FFFFFF")))
+                c.rect(*cover, fill=1, stroke=0)
+            _draw_text(
+                c, spec.get("text", ""), spec["x"], spec["y"],
+                font_size=spec.get("font_size", 9),
+                align=spec.get("align", "left"),
+                bold=spec.get("bold", False),
+                color=HexColor(spec["color"]) if spec.get("color") else None,
+            )
+            continue
         value = values.get(field_name)
         if value is None:
             continue
@@ -350,22 +457,30 @@ def _render_page(fields_data: dict, values: dict[str, Any],
                     y=spec["y"],
                     font_size=spec.get("font_size", 9),
                     line_height=spec.get("line_height", 11),
+                    max_width=spec.get("max_width"),
                 )
             continue
         raw_color = spec.get("color")
         field_color = HexColor(raw_color) if raw_color else None
+        text = str(value)
+        font_size = spec.get("font_size", 9)
+        if spec.get("max_width") and not spec.get("multiline", False):
+            font = FONT_BOLD if spec.get("bold", False) else FONT_REGULAR
+            text, font_size = _fit_single_line(c, text, font, font_size, spec["max_width"])
         _draw_text(
             c,
-            text=str(value),
+            text=text,
             x=spec["x"],
             y=spec["y"],
-            font_size=spec.get("font_size", 9),
+            font_size=font_size,
             align=spec.get("align", "left"),
             max_width=spec.get("max_width"),
             multiline=spec.get("multiline", False),
             line_height=spec.get("line_height", 11),
             bold=spec.get("bold", False),
             color=field_color,
+            # paragraph_spacing_em is in ems: 1 = one font-size of extra space
+            paragraph_spacing=float(spec.get("paragraph_spacing_em", 0)) * font_size,
         )
 
     if extra_draw is not None:
@@ -471,8 +586,9 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         return ""
 
     page1: dict[str, Any] = {
-        "name":       char.name,
+        "name":       _name_with_pronouns(char.name, char.pronouns),
         "pronouns":   char.pronouns.strip(),
+        "species":    (char.race or "").title(),
         "char_class": char.char_class.title(),
         "level":      str(char.level),
         "xp":         str(getattr(char, "experience_points", None) or xp_for_level(char.level)),
@@ -555,6 +671,33 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
     return {"page1": page1, "page2": page2}
 
 
+def _identify_sheet_pages(page_texts: list[str]) -> list[str]:
+    """Work out which field-map page ("page1" / "page2") each sheet page is.
+
+    The field map calls the identity side (abilities, skills, inventory) "page1"
+    and the combat side (saving throws, attacks, magic) "page2". The artwork can
+    be exported with its two pages in either order, so match on the printed
+    headings instead of trusting the order. Falls back to file order if the
+    headings cannot be read.
+    """
+    default = ["page1", "page2"][:len(page_texts)]
+    if len(page_texts) != 2:
+        return default
+
+    def is_identity(text: str) -> bool:
+        t = text.upper()
+        return "SKILLS" in t or "INVENTORY" in t
+
+    def is_combat(text: str) -> bool:
+        t = text.upper()
+        return "ATTACKS" in t or "SAVING" in t
+
+    first, second = page_texts
+    if is_combat(first) and is_identity(second) and not is_identity(first):
+        return ["page2", "page1"]
+    return default
+
+
 def fill_otg_sheet(char: Character, output_path: str | Path) -> Path:
     """
     Fill the OtG character sheet PDF for *char* and write to *output_path*.
@@ -580,19 +723,21 @@ def fill_otg_sheet(char: Character, output_path: str | Path) -> Path:
                     _ss=spell_stats_spec, _cs=col_spec) -> None:
         _draw_spell_section(c, _c, _s, _ss, _cs)
 
-    overlays: list[bytes] = [
-        _render_page(field_map.get("page1", {}), values.get("page1", {})),
-        _render_page(field_map.get("page2", {}), values.get("page2", {}),
-                     extra_draw=page2_extra),
-    ]
+    overlays: dict[str, bytes] = {
+        "page1": _render_page(field_map.get("page1", {}), values.get("page1", {})),
+        "page2": _render_page(field_map.get("page2", {}), values.get("page2", {}),
+                              extra_draw=page2_extra),
+    }
 
     blank  = PdfReader(str(SHEET_PDF))
     writer = PdfWriter()
+    page_keys = _identify_sheet_pages([pg.extract_text() or "" for pg in blank.pages])
 
-    for blank_page, overlay_bytes in zip(blank.pages, overlays):
+    for blank_page, key in zip(blank.pages, page_keys):
+        overlay_bytes = overlays[key]
         overlay_page = PdfReader(io.BytesIO(overlay_bytes)).pages[0]
-        blank_page.merge_page(overlay_page)
-        writer.add_page(blank_page)
+        page = writer.add_page(blank_page)
+        page.merge_page(overlay_page)
 
     # Accessibility metadata
     writer.add_metadata({

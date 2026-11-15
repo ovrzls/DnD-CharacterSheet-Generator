@@ -300,3 +300,31 @@ class TestRandomEquipment:
             )
             assert result["armor_class"] == expected, \
                 f"{cls}: AC mismatch (got {result['armor_class']}, expected {expected})"
+
+
+class TestUnarmoredOutfits:
+    """Classes that start without armor list their clothing instead."""
+
+    @pytest.mark.parametrize("cls,outfit", [
+        ("barbarian", "Unarmored: loose breeches and wrapped boots"),
+        ("monk",      "Unarmored: rough-linen garb and soft-soled slippers"),
+        ("wizard",    "Unarmored: light traveling cloak fastened with a metal clasp and simple sandals"),
+        ("sorcerer",  "Unarmored: long silk tunic with sweeping cape and soft boots"),
+    ])
+    def test_outfit_listed_first(self, cls, outfit):
+        result = get_standard_equipment(cls, AbilityScores(10, 14, 14, 10, 14, 10))
+        assert result["equipment"][0].name == outfit
+
+    @pytest.mark.parametrize("cls", ["barbarian", "monk", "wizard", "sorcerer"])
+    def test_outfit_is_not_armor_and_leaves_ac_alone(self, cls):
+        abil = AbilityScores(10, 14, 14, 10, 14, 10)
+        result = get_standard_equipment(cls, abil)
+        item = result["equipment"][0]
+        assert item.armor_type == "" and item.ac_base == 0 and not item.is_shield
+        assert result["armor_key"] == "none"
+        assert result["armor_class"] == calc_ac("none", 2, cls, 2, 2, False)
+
+    @pytest.mark.parametrize("cls", ["fighter", "cleric", "rogue", "ranger"])
+    def test_armored_classes_get_no_outfit(self, cls):
+        result = get_standard_equipment(cls, AbilityScores(10, 14, 14, 10, 14, 10))
+        assert not any(i.name.startswith("Unarmored") for i in result["equipment"])

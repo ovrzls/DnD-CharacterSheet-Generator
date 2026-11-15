@@ -12,7 +12,9 @@ from engine.character import (
 from engine.rules import derive_stats
 from pdf.filler import (
     character_to_field_values, fill_otg_sheet, SHEET_PDF,
-    _spell_effect_summary, _build_spell_columns,
+    _spell_effect_summary, _build_spell_columns, _spell_entry_label,
+    _fit_spell_entry, _load_field_map, FONT_REGULAR,
+    _name_with_pronouns, _fit_single_line, _identify_sheet_pages, _draw_wrapped,
 )
 
 
@@ -420,6 +422,16 @@ class TestBuildSpellColumns:
 
 
 class TestPronouns:
+    def test_species_shown_on_page1(self):
+        char = _make_fighter()
+        char.race = "half-elf"
+        v = character_to_field_values(char)
+        assert v["page1"]["species"] == "Half-Elf"
+
+    def test_species_empty_by_default(self):
+        v = character_to_field_values(_make_fighter())
+        assert v["page1"]["species"] == ""
+
     def test_pronouns_passthrough(self):
         char = _make_fighter()
         char.pronouns = "he/him"
@@ -536,3 +548,108 @@ class TestFillOtgSheet:
                 fill_otg_sheet(_make_fighter(), tmp_path / "out.pdf")
         finally:
             filler_mod.SHEET_PDF = original
+
+
+class TestSpellEntryFitting:
+    def _canvas(self):
+        import io
+        from reportlab.pdfgen import canvas
+        return canvas.Canvas(io.BytesIO())
+
+    def test_label_joins_name_and_effect(self):
+        assert _spell_entry_label("Fire Bolt", "2d10 fire") == "Fire Bolt — 2d10 fire"
+
+    def test_label_concentration_only_has_no_dash(self):
+        assert _spell_entry_label("Detect Magic", "(C)") == "Detect Magic (C)"
+
+    def test_label_without_effect_is_just_the_name(self):
+        assert _spell_entry_label("Mage Hand", "") == "Mage Hand"
+
+    def test_entry_that_fits_is_unchanged(self):
+        c = self._canvas()
+        assert _fit_spell_entry(c, "Shield — +5 AC", FONT_REGULAR, 9.5, 122) == "Shield — +5 AC"
+
+    def test_wide_entry_drops_effect_but_keeps_name_and_concentration(self):
+        c = self._canvas()
+        entry = "Protection from Evil and Good — Abjuration (C)"
+        assert _fit_spell_entry(c, entry, FONT_REGULAR, 9.5, 122) == "Protection from Evil and Good (C)"
+
+    def test_name_is_only_cut_as_a_last_resort(self):
+        c = self._canvas()
+        out = _fit_spell_entry(c, "An Extremely Long Spell Name That Cannot Fit — x", FONT_REGULAR, 9.5, 60)
+        assert out.endswith("…")
+        assert c.stringWidth(out, FONT_REGULAR, 9.5) <= 60
+
+
+class TestFieldMapSpecies:
+    def test_species_replaces_pronouns_slot(self):
+        page1 = _load_field_map()["page1"]
+        assert "species" in page1
+        assert "pronouns" not in page1
+
+
+class TestNameWithPronouns:
+    def test_name_alone_when_no_pronouns(self):
+        assert _name_with_pronouns("Mira", "") == "Mira"
+
+    def test_pronouns_follow_name_in_brackets(self):
+        assert _name_with_pronouns("Mira", " she/her ") == "Mira (she/her)"
+
+    def test_name_field_carries_pronouns(self):
+        char = _make_fighter()
+        char.pronouns = "they/them"
+        v = character_to_field_values(char)
+        assert v["page1"]["name"] == "Aldric (they/them)"
+
+    def test_long_name_shrinks_before_it_is_cut(self):
+        import io
+        from reportlab.pdfgen import canvas
+        c = canvas.Canvas(io.BytesIO())
+        text, size = _fit_single_line(c, "Bartholomew Quill (they/them)", FONT_REGULAR, 11, 118)
+        assert text == "Bartholomew Quill (they/them)"
+        assert 8 <= size <= 11
+
+    def test_very_long_name_is_cut_to_fit(self):
+        import io
+        from reportlab.pdfgen import canvas
+        c = canvas.Canvas(io.BytesIO())
+        text, size = _fit_single_line(c, "Maximilian Thunderbrook-Ashenvale the Third (xe/xem)", FONT_REGULAR, 11, 118)
+        assert size == 8
+        assert text.endswith("…")
+        assert c.stringWidth(text, FONT_REGULAR, size) <= 118
+
+
+class TestIdentifySheetPages:
+    IDENTITY = "NAME SPECIES CLASS ABILITIES SKILLS PROFICIENCIES INVENTORY"
+    COMBAT = "INITIATIVE SAVING THROW BONUS ATTACKS MAGIC & SPECIAL ABILITIES"
+
+    def test_identity_page_first(self):
+        assert _identify_sheet_pages([self.IDENTITY, self.COMBAT]) == ["page1", "page2"]
+
+    def test_combat_page_first(self):
+        assert _identify_sheet_pages([self.COMBAT, self.IDENTITY]) == ["page2", "page1"]
+
+    def test_unreadable_text_keeps_file_order(self):
+        assert _identify_sheet_pages(["", ""]) == ["page1", "page2"]
+
+
+class TestParagraphSpacing:
+    def _end_y(self, text, spacing):
+        import io
+        from reportlab.pdfgen import canvas
+        c = canvas.Canvas(io.BytesIO())
+        return _draw_wrapped(c, text, 0, 100, 10, FONT_REGULAR, 500, 12, spacing)
+
+    def test_no_spacing_by_default(self):
+        assert self._end_y("one\ntwo\nthree", 0) == 100 - 3 * 12
+
+    def test_gap_added_between_paragraphs_only(self):
+        # three paragraphs -> two gaps, none before the first or after the last
+        assert self._end_y("one\ntwo\nthree", 10) == 100 - 3 * 12 - 2 * 10
+
+    def test_single_paragraph_has_no_gap(self):
+        assert self._end_y("one", 10) == 100 - 12
+
+    def test_proficiencies_block_has_paragraph_spacing(self):
+        spec = _load_field_map()["page1"]["proficiencies_text"]
+        assert spec["paragraph_spacing_em"] > 0

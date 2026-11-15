@@ -3,9 +3,41 @@ pdf/html_sheet.py — Accessible HTML character sheet output.
 Generates a single self-contained HTML file (inline CSS, no external deps).
 """
 from __future__ import annotations
+import base64
 from html import escape as h
+from pathlib import Path
 from engine.character import Character
 from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS, get_character_features
+
+
+# The sheet is a single file that must work offline, so the typeface is embedded
+# in the page itself rather than linked. Two weights keep the file small.
+_FONT_DIR = Path(__file__).parent.parent / "ui" / "static" / "fonts" / "barlow-condensed"
+_FONT_FACES = (("BarlowCondensed-Regular.woff2", 400), ("BarlowCondensed-Bold.woff2", 700))
+_font_css_cache: str | None = None
+
+
+def _embedded_font_css() -> str:
+    """Return @font-face rules with Barlow Condensed embedded as base64.
+
+    Returns "" if the font files are missing; the page then uses the system font.
+    """
+    global _font_css_cache
+    if _font_css_cache is None:
+        rules = []
+        for filename, weight in _FONT_FACES:
+            try:
+                data = base64.b64encode((_FONT_DIR / filename).read_bytes()).decode("ascii")
+            except OSError:
+                rules = []
+                break
+            rules.append(
+                '@font-face{font-family:"Barlow Condensed";font-style:normal;'
+                f"font-weight:{weight};font-display:swap;"
+                f'src:url(data:font/woff2;base64,{data}) format("woff2")}}'
+            )
+        _font_css_cache = "\n".join(rules)
+    return _font_css_cache
 
 
 def _sign(n: int) -> str:
@@ -18,7 +50,7 @@ def _mod(score: int) -> int:
 
 _CSS = """
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.6;
+body{font-family:"Barlow Condensed",system-ui,-apple-system,sans-serif;font-size:112.5%;line-height:1.6;
      color:#1a1a1a;background:#f0f4f4}
 h1{font-size:1.8rem;margin-bottom:.25rem}
 h2{font-size:1.15rem;margin:.75rem 0 .4rem;text-transform:uppercase;letter-spacing:.05em}
@@ -357,7 +389,7 @@ def generate_html_sheet(char: Character) -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{char_name} — D&amp;D Character Sheet</title>
-  <style>{_CSS}</style>
+  <style>{_embedded_font_css()}{_CSS}</style>
 </head>
 <body>
   <main>
