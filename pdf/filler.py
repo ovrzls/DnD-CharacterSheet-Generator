@@ -678,8 +678,14 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
 
     # Attacks (char.attacks is a list[Attack] built by equipment step)
     for i, atk in enumerate(char.attacks[:5], start=1):
-        dmg_mod = atk.hit_bonus - prof
-        dmg_str = atk.damage_dice if dmg_mod == 0 else f"{atk.damage_dice} {_sign(dmg_mod)}"
+        dice = atk.damage_dice
+        # Use damage_dice as-is when it already encodes the full modifier
+        # (e.g. "1d8+5" with Dueling, "1d8+3" for Archery, "4" flat damage)
+        if "+" in dice or "-" in dice or "d" not in dice:
+            dmg_str = dice
+        else:
+            dmg_mod = atk.hit_bonus - prof
+            dmg_str = dice if dmg_mod == 0 else f"{dice} {_sign(dmg_mod)}"
         page2[f"atk{i}_weapon"] = atk.name
         page2[f"atk{i}_hit"]    = _sign(atk.hit_bonus)
         page2[f"atk{i}_dmg"]    = dmg_str
@@ -717,10 +723,15 @@ def _identify_sheet_pages(page_texts: list[str]) -> list[str]:
     return default
 
 
-def fill_otg_sheet(char: Character, output_path: str | Path) -> Path:
+def fill_otg_sheet(char: Character, output_path: str | Path, *,
+                   predefined: bool = False) -> Path:
     """
     Fill the OtG character sheet PDF for *char* and write to *output_path*.
     Returns the resolved output path.
+
+    Pass predefined=True when the Character has already been fully derived
+    (derive_stats called externally with post-call overrides applied) to skip
+    the internal derive_stats call.
     """
     if not SHEET_PDF.exists():
         raise FileNotFoundError(
@@ -728,7 +739,8 @@ def fill_otg_sheet(char: Character, output_path: str | Path) -> Path:
             "Place OtG-Revised-Charactersheet.pdf in pdf/field_maps/."
         )
 
-    derive_stats(char)
+    if not predefined:
+        derive_stats(char)
 
     field_map = _load_field_map()
     values    = character_to_field_values(char)
@@ -752,7 +764,7 @@ def fill_otg_sheet(char: Character, output_path: str | Path) -> Path:
     writer = PdfWriter()
     page_keys = _identify_sheet_pages([pg.extract_text() or "" for pg in blank.pages])
 
-    for blank_page, key in zip(blank.pages, page_keys):
+    for blank_page, key in reversed(list(zip(blank.pages, page_keys))):
         overlay_bytes = overlays[key]
         overlay_page = PdfReader(io.BytesIO(overlay_bytes)).pages[0]
         page = writer.add_page(blank_page)

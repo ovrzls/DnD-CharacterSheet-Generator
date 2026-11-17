@@ -568,6 +568,122 @@ BACKGROUND_FEATURES = {
         "City Secrets",
         "Know secret passages through cities. Travel between locations at double normal pace.",
     ),
+    # ── Open5e ───────────────────────────────────────────────────────────────
+    "con artist": (
+        "Cover Story",
+        "Maintain a convincing alternate identity with forged documents and false history.",
+    ),
+    "performer": (
+        "Performance Experience",
+        "Always find venues to perform. Audiences pay well and spread your fame.",
+    ),
+    "pirate": (
+        "Nautical Knowledge",
+        "Know ship routes, hidden coves, and smuggler contacts in coastal regions.",
+    ),
+    # ── Tome of Heroes ───────────────────────────────────────────────────────
+    "court servant": (
+        "Servant's Invisibility",
+        "Servants go unnoticed. Eavesdrop on meetings and move through noble households unseen.",
+    ),
+    "desert runner": (
+        "Nomad",
+        "Find food and water in arid lands, navigate by stars, and know desert customs.",
+    ),
+    "destined": (
+        "Reputation of Opportunity",
+        "Your name opens doors. People expect great things and may offer unsolicited aid.",
+    ),
+    "diplomat": (
+        "A Friend in Every Port",
+        "Know someone in almost every settlement who can offer hospitality or introductions.",
+    ),
+    "forest dweller": (
+        "Forester",
+        "Live off the land in forests and find food and water for yourself and companions.",
+    ),
+    "former adventurer": (
+        "Old Friends and Enemies",
+        "Reputation among adventurers. Old contacts may help — or old enemies may surface.",
+    ),
+    "freebooter": (
+        "A Friendly Face in Every Port",
+        "Known in coastal settlements. Find work, shelter, or passage among sailors.",
+    ),
+    "gamekeeper": (
+        "Confirmed Guildmember",
+        "Train a raptor or hunting dog as a companion. The animal obeys commands and helps find food.",
+    ),
+    "innkeeper": (
+        "I Know Someone",
+        "Your hospitality network means you usually know a local who can help with almost any need.",
+    ),
+    "lyceum student": (
+        "Studentship",
+        "Access to a lyceum library and faculty contacts for research and magical knowledge.",
+    ),
+    "minstrel": (
+        "Ear for Music",
+        "Perform for lodging anywhere. Gossip flows freely to entertainers; you hear local rumors.",
+    ),
+    "missionary": (
+        "Shelter of the Devoted",
+        "Religious communities of your faith shelter you and your companions free of charge.",
+    ),
+    "monument builder": (
+        "Monument Knowledge",
+        "Identify the age, builder, and purpose of structures and large constructions.",
+    ),
+    "mule handler": (
+        "Trained Beasts",
+        "Animals trust you instinctively. Train a pack animal that follows commands and carries gear.",
+    ),
+    "nomad": (
+        "Nomadic Traditions",
+        "Your nomadic tribe provides shelter and information when you pass through their territory.",
+    ),
+    "occultist": (
+        "Obscure Knowledge",
+        "Access rare lore. If the information exists, you know where to look or who to ask.",
+    ),
+    "officer": (
+        "Authority",
+        "Soldiers and guards recognize a chain of command. Lower-ranking fighters often defer to you.",
+    ),
+    "plague doctor": (
+        "Practiced Healer",
+        "Communities in need of healing welcome you. Free room and board in exchange for care.",
+    ),
+    "prisoner": (
+        "Prison Connections",
+        "Criminal networks respect survivors. Underworld contacts owe you small favors.",
+    ),
+    "scribe": (
+        "Calligraphy Skills",
+        "Forge, copy, or authenticate documents. Noble households trust your work for official records.",
+    ),
+    # ── Critical Role: Tal'Dorei ─────────────────────────────────────────────
+    "crime syndicate member": (
+        "A Favor In Turn",
+        "Call on your syndicate for help. In return, the syndicate may call on you.",
+    ),
+    "elemental warden": (
+        "Elemental Harmony",
+        "Sense elemental imbalance nearby and communicate simply with elemental beings.",
+    ),
+    "monk of the four elements": (
+        "Monastic Tradition",
+        "Recognized by other monks. Monastic communities offer shelter and training resources.",
+    ),
+    # ── SRD extras ───────────────────────────────────────────────────────────
+    "scholar": (
+        "Researcher",
+        "Know where to find information. If you don't know it, you know who or where to ask.",
+    ),
+    "street urchin": (
+        "City Secrets",
+        "Know hidden passages through cities. Travel between locations at double normal pace.",
+    ),
 }
 
 
@@ -680,26 +796,58 @@ CLASS_SKILLS: dict[str, list[str]] = {
 
 # Fixed skill proficiencies granted by each background
 BACKGROUND_SKILLS: dict[str, list[str]] = {
-    "acolyte":            ["Insight", "Religion"],
-    "charlatan":          ["Deception", "Sleight of Hand"],
-    "criminal":           ["Deception", "Stealth"],
-    "entertainer":        ["Acrobatics", "Performance"],
-    "folk hero":          ["Animal Handling", "Survival"],
-    "guild artisan":      ["Insight", "Persuasion"],
-    "hermit":             ["Medicine", "Religion"],
-    "noble":              ["History", "Persuasion"],
-    "outlander":          ["Athletics", "Survival"],
-    "sage":               ["Arcana", "History"],
-    "sailor":             ["Athletics", "Perception"],
-    "soldier":            ["Athletics", "Intimidation"],
-    "spy":                ["Deception", "Stealth"],
-    "urchin":             ["Sleight of Hand", "Stealth"],
-    "haunted one":        ["Arcana", "Investigation"],
-    "far traveler":       ["Insight", "Perception"],
-    "city watch":         ["Athletics", "Insight"],
-    "mercenary veteran":  ["Athletics", "Persuasion"],
-    "urban bounty hunter":["Deception", "Stealth"],
+    # ── SRD / PHB ────────────────────────────────────────────────────────────
+    "acolyte":               ["Insight", "Religion"],
+    "charlatan":             ["Deception", "Sleight of Hand"],
+    "city watch":            ["Athletics", "Insight"],
+    "criminal":              ["Deception", "Stealth"],
+    "entertainer":           ["Acrobatics", "Performance"],
+    "far traveler":          ["Insight", "Perception"],
+    "folk hero":             ["Animal Handling", "Survival"],
+    "guild artisan":         ["Insight", "Persuasion"],
+    "haunted one":           ["Arcana", "Investigation"],
+    "hermit":                ["Medicine", "Religion"],
+    "mercenary veteran":     ["Athletics", "Persuasion"],
+    "noble":                 ["History", "Persuasion"],
+    "outlander":             ["Athletics", "Survival"],
+    "sage":                  ["Arcana", "History"],
+    "sailor":                ["Athletics", "Perception"],
+    "scholar":               ["Arcana", "History"],
+    "soldier":               ["Athletics", "Intimidation"],
+    "spy":                   ["Deception", "Stealth"],
+    "street urchin":         ["Sleight of Hand", "Deception"],
+    "urban bounty hunter":   ["Deception", "Stealth"],
+    "urchin":                ["Sleight of Hand", "Stealth"],
     "uthgardt tribe member": ["Athletics", "Survival"],
+    # ── Open5e (o5e) ─────────────────────────────────────────────────────────
+    "con artist":            ["Deception", "Sleight of Hand"],
+    "performer":             ["Acrobatics", "Performance"],
+    "pirate":                ["Athletics", "Stealth"],
+    # ── Tome of Heroes (Kobold Press) ─────────────────────────────────────────
+    "court servant":         ["History", "Insight"],
+    "desert runner":         ["Perception", "Survival"],
+    "destined":              ["History", "Insight"],
+    "diplomat":              ["Insight", "Persuasion"],
+    "forest dweller":        ["Nature", "Survival"],
+    "former adventurer":     ["Perception", "Survival"],
+    "freebooter":            ["Athletics", "Survival"],
+    "gamekeeper":            ["Animal Handling", "Persuasion"],
+    "innkeeper":             ["Insight", "Persuasion"],
+    "lyceum student":        ["Arcana", "History"],
+    "minstrel":              ["Performance", "Persuasion"],
+    "missionary":            ["Medicine", "Insight"],
+    "monument builder":      ["History", "Survival"],
+    "mule handler":          ["Animal Handling", "Medicine"],
+    "nomad":                 ["Animal Handling", "Survival"],
+    "occultist":             ["Arcana", "History"],
+    "officer":               ["Athletics", "Insight"],
+    "plague doctor":         ["Medicine", "Arcana"],
+    "prisoner":              ["Stealth", "Insight"],
+    "scribe":                ["Arcana", "History"],
+    # ── Critical Role: Tal'Dorei ──────────────────────────────────────────────
+    "crime syndicate member":    ["Deception", "Stealth"],
+    "elemental warden":          ["Nature", "Survival"],
+    "monk of the four elements": ["Arcana", "Survival"],
 }
 
 # All skills and their governing ability
