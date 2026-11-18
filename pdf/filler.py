@@ -167,11 +167,15 @@ def _draw_inventory_with_checkboxes(
     font_size: int,
     line_height: int,
     max_width: float | None = None,
+    per_col: int | None = None,
+    overflow_x: float | None = None,
+    overflow_max_width: float | None = None,
 ) -> None:
     """Draw each item preceded by a small filled checkbox square.
 
-    max_width is the width of the whole row including the checkbox. An item too
-    long for one line wraps, with the following lines aligned under its text.
+    When per_col and overflow_x are set and len(items) > per_col, the first
+    per_col items fill the main column; remaining items start a second column
+    at (overflow_x, y) with the same y-start as the main column.
     """
     checkbox_color = HexColor("#E8EAE7")
     stroke_color   = HexColor("#AAAAAA")
@@ -179,8 +183,12 @@ def _draw_inventory_with_checkboxes(
     checkbox_size  = 8
     gap            = 4
 
+    split = per_col if (per_col and overflow_x is not None and len(items) > per_col) else len(items)
+    col1_items = items[:split]
+    col2_items = items[split:]
+
     cur_y = y
-    for item_text in items:
+    for item_text in col1_items:
         c.setFillColor(checkbox_color)
         c.setStrokeColor(stroke_color)
         c.setLineWidth(0.5)
@@ -194,6 +202,25 @@ def _draw_inventory_with_checkboxes(
         else:
             c.drawString(text_x, cur_y, str(item_text))
             cur_y -= line_height
+
+    if col2_items:
+        col2_x = overflow_x
+        col2_w = overflow_max_width or max_width
+        cur_y = y
+        for item_text in col2_items:
+            c.setFillColor(checkbox_color)
+            c.setStrokeColor(stroke_color)
+            c.setLineWidth(0.5)
+            c.rect(col2_x, cur_y - 1, checkbox_size, checkbox_size, fill=1, stroke=1)
+            c.setFillColor(text_color)
+            c.setFont(FONT_REGULAR, font_size)
+            text_x = col2_x + checkbox_size + gap
+            if col2_w:
+                cur_y = _draw_wrapped(c, str(item_text), text_x, cur_y, font_size,
+                                      FONT_REGULAR, col2_w - checkbox_size - gap, line_height)
+            else:
+                c.drawString(text_x, cur_y, str(item_text))
+                cur_y -= line_height
 
 
 def _spell_effect_summary(sp) -> str:
@@ -474,6 +501,9 @@ def _render_page(fields_data: dict, values: dict[str, Any],
                     font_size=spec.get("font_size", 9),
                     line_height=spec.get("line_height", 11),
                     max_width=spec.get("max_width"),
+                    per_col=spec.get("per_col"),
+                    overflow_x=spec.get("overflow_x"),
+                    overflow_max_width=spec.get("overflow_max_width"),
                 )
             continue
         raw_color = spec.get("color")

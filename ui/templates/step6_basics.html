@@ -5,13 +5,13 @@
 <div class="wizard-card">
   <h1 class="step-heading">Step 6: Character Basics</h1>
   <p class="step-intro">
-    Almost there! Give your character a name and, optionally, some pronouns.
+    Almost there! Optionally give your character a name and pronouns.
   </p>
 
   <form method="post" action="{{ url_for('step', n=6) }}" novalidate>
 
-    <div class="field {% if errors.name %}field-error{% endif %}">
-      <label for="name">Character Name <span class="required" aria-hidden="true">*</span></label>
+    <div class="field">
+      <label for="name">Character Name</label>
       <div class="name-input-group">
         <input
           type="text"
@@ -19,9 +19,7 @@
           name="name"
           value="{{ char.name or '' }}"
           autocomplete="off"
-          aria-required="true"
-          aria-describedby="{% if errors.name %}name-err {% endif %}name-hint"
-          {% if errors.name %}aria-invalid="true"{% endif %}
+          aria-describedby="name-hint"
           class="text-input"
         >
         <button type="button"
@@ -31,10 +29,7 @@
           ✨ Suggest a name
         </button>
       </div>
-      {% if errors.name %}
-      <span id="name-err" class="error-msg" role="alert">{{ errors.name }}</span>
-      {% endif %}
-      <span id="name-hint" class="field-hint">The name of the character in the story</span>
+      <span id="name-hint" class="field-hint">Optional — leave blank to fill in later</span>
     </div>
 
     <div class="field">

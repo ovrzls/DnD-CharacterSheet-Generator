@@ -103,7 +103,7 @@ HP_BONUSES: dict[str, int] = {
 
 def _make_barbarian() -> Character:
     return Character(
-        name="OtG Barbarian",
+        name="",
         char_class="barbarian",
         level=3,
         ability_scores=AbilityScores(strength=16, dexterity=14, constitution=15,
@@ -137,7 +137,7 @@ def _make_barbarian() -> Character:
 
 def _make_bard() -> Character:
     return Character(
-        name="OtG Bard",
+        name="",
         char_class="bard",
         level=3,
         ability_scores=AbilityScores(strength=9, dexterity=14, constitution=15,
@@ -182,7 +182,7 @@ def _make_bard() -> Character:
 
 def _make_cleric() -> Character:
     return Character(
-        name="OtG Cleric",
+        name="",
         char_class="cleric",
         level=3,
         ability_scores=AbilityScores(strength=14, dexterity=9, constitution=15,
@@ -230,7 +230,7 @@ def _make_cleric() -> Character:
 
 def _make_druid() -> Character:
     return Character(
-        name="OtG Druid",
+        name="",
         char_class="druid",
         level=3,
         ability_scores=AbilityScores(strength=11, dexterity=14, constitution=15,
@@ -279,7 +279,7 @@ def _make_druid() -> Character:
 
 def _make_fighter() -> Character:
     return Character(
-        name="OtG Fighter",
+        name="",
         char_class="fighter",
         level=3,
         ability_scores=AbilityScores(strength=16, dexterity=13, constitution=15,
@@ -316,7 +316,7 @@ def _make_fighter() -> Character:
 
 def _make_monk() -> Character:
     return Character(
-        name="OtG Monk",
+        name="",
         char_class="monk",
         level=3,
         ability_scores=AbilityScores(strength=11, dexterity=16, constitution=14,
@@ -351,7 +351,7 @@ def _make_monk() -> Character:
 
 def _make_paladin() -> Character:
     return Character(
-        name="OtG Paladin",
+        name="",
         char_class="paladin",
         level=3,
         ability_scores=AbilityScores(strength=15, dexterity=11, constitution=16,
@@ -394,7 +394,7 @@ def _make_paladin() -> Character:
 
 def _make_ranger() -> Character:
     return Character(
-        name="OtG Ranger",
+        name="",
         char_class="ranger",
         level=3,
         ability_scores=AbilityScores(strength=9, dexterity=16, constitution=15,
@@ -435,7 +435,7 @@ def _make_ranger() -> Character:
 
 def _make_rogue() -> Character:
     return Character(
-        name="OtG Rogue",
+        name="",
         char_class="rogue",
         level=3,
         ability_scores=AbilityScores(strength=9, dexterity=16, constitution=15,
@@ -474,7 +474,7 @@ def _make_rogue() -> Character:
 
 def _make_sorcerer() -> Character:
     return Character(
-        name="OtG Sorcerer",
+        name="",
         char_class="sorcerer",
         level=3,
         ability_scores=AbilityScores(strength=9, dexterity=13, constitution=15,
@@ -521,7 +521,7 @@ def _make_sorcerer() -> Character:
 
 def _make_warlock() -> Character:
     return Character(
-        name="OtG Warlock",
+        name="",
         char_class="warlock",
         level=3,
         ability_scores=AbilityScores(strength=9, dexterity=14, constitution=15,
@@ -569,7 +569,7 @@ def _make_warlock() -> Character:
 
 def _make_wizard() -> Character:
     return Character(
-        name="OtG Wizard",
+        name="",
         char_class="wizard",
         level=3,
         ability_scores=AbilityScores(strength=9, dexterity=14, constitution=15,

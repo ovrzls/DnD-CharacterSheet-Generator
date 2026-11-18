@@ -192,7 +192,7 @@ def _build_char(*, equipment: bool = True, spells: bool = True) -> Character:
         charisma=     _s("cha"),
     )
     char = Character(
-        name=data.get("name", "Unnamed Hero"),
+        name=data.get("name", ""),
         pronouns=data.get("pronouns", "").strip(),
         char_class=data.get("char_class", "fighter").lower(),
         race=data.get("species", ""),
@@ -411,8 +411,8 @@ def step(n: int):
     data = _char_data()
     # Guard: must have completed each prior step
     guards = [
-        (2, "species"),
-        (3, "char_class"),
+        (2, "char_class"),
+        (3, "species"),
         (4, "background"),
         (5, "ability_scores"),
         (6, "ability_scores"),  # step 5 (equipment) writes nothing new to session
@@ -422,7 +422,7 @@ def step(n: int):
         if n >= req_step and not data.get(req_key):
             return redirect(url_for("step", n=req_step - 1))
 
-    handlers = {1: _step1, 2: _step2, 3: _step3,
+    handlers = {1: _step2, 2: _step1, 3: _step3,
                 4: _step4, 5: _step5, 6: _step6, 7: _step7}
     return handlers[n](data)
 
@@ -439,9 +439,9 @@ def _step1(data: dict):
             errors["species"] = "Please select a species."
         if not errors:
             _save({"species": chosen})
-            return redirect(url_for("step", n=2))
+            return redirect(url_for("step", n=3))
 
-    ctx = _step_ctx(1)
+    ctx = _step_ctx(2)
     ctx.update({
         "errors":       errors,
         "species_list": species_list,
@@ -485,9 +485,9 @@ def _step2(data: dict):
                 "level":      level_int,
                 "subclass":   subclass,
             })
-            return redirect(url_for("step", n=3))
+            return redirect(url_for("step", n=2))
 
-    ctx = _step_ctx(2)
+    ctx = _step_ctx(1)
     ctx.update({
         "errors":          errors,
         "classes_list":    classes_list,
@@ -750,9 +750,6 @@ def _step6(data: dict):
     if request.method == "POST":
         name     = request.form.get("name", "").strip()
         pronouns = request.form.get("pronouns", "").strip()
-
-        if not name:
-            errors["name"] = "Please enter a character name."
 
         if not errors:
             _save({"name": name, "pronouns": pronouns})
