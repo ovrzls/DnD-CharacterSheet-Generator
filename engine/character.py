@@ -89,6 +89,17 @@ class Character:
     class_source: str = "srd"
     background: str = ""
     background_source: str = "srd"
+    # Background feature as offered by the wizard (from Open5e). Empty means
+    # fall back to the built-in table in rules.BACKGROUND_FEATURES.
+    background_feature: str = ""
+    background_feature_desc: str = ""
+    # Background skill grant as written by the wizard's source (e.g. Open5e:
+    # "Persuasion, and either Insight or History."). Empty means use the
+    # built-in rules.BACKGROUND_SKILLS table.
+    background_skill_text: str = ""
+    # Skills the background actually granted, after choices were resolved.
+    # Filled by derive_stats().
+    background_skills: list[str] = field(default_factory=list)
 
     # Sheet variant (auto-selected, never player-facing)
     # "martial" -> OtG martial sheet  |  "caster" -> OtG caster sheet

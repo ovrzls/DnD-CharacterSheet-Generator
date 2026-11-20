@@ -653,3 +653,106 @@ class TestParagraphSpacing:
     def test_proficiencies_block_has_paragraph_spacing(self):
         spec = _load_field_map()["page1"]["proficiencies_text"]
         assert spec["paragraph_spacing_em"] > 0
+
+
+class TestCalibrationProof:
+    def test_page_overlay_renders_for_every_field(self):
+        from pdf.calibrate_overlay import render_calibration_page
+        fields = _load_field_map()["page1"]
+        data = render_calibration_page(fields, "page1")
+        assert data.startswith(b"%PDF")
+
+    @pytest.mark.skipif(not SHEET_PDF.exists(), reason="blank sheet not present")
+    def test_proof_has_both_pages(self, tmp_path):
+        from pypdf import PdfReader
+        from pdf.calibrate_overlay import build_proof
+        out = build_proof(tmp_path / "proof.pdf")
+        # two sheet pages, then at least one key page per sheet page
+        assert len(PdfReader(str(out)).pages) >= 4
+
+
+class TestFeaturesTraitsBox:
+    def _canvas(self):
+        import io
+        from reportlab.pdfgen import canvas
+        return canvas.Canvas(io.BytesIO())
+
+    def _spec(self, **kw):
+        spec = dict(_load_field_map()["page2"]["features_traits"])
+        spec.update(kw)
+        return spec
+
+    def test_field_map_entry(self):
+        spec = _load_field_map()["page2"]["features_traits"]
+        assert (spec["x"], spec["y"], spec["max_width"]) == (432, 516, 136)
+        assert spec["type"] == "titled_text"
+
+    def test_value_leads_with_background_name(self):
+        char = _make_fighter()
+        char.background = "artisan"
+        char.background_feature = "Trade Mark"
+        char.background_feature_desc = "You have access to a workshop."
+        v = character_to_field_values(char)["page2"]["features_traits"]
+        assert v == {"title": "Artisan", "body": "You have access to a workshop."}
+
+    def test_falls_back_to_built_in_table(self):
+        from engine.rules import BACKGROUND_FEATURES
+        char = _make_fighter()
+        char.background = "Soldier"
+        v = character_to_field_values(char)["page2"]["features_traits"]
+        assert v["title"] == "Soldier"
+        assert v["body"] == BACKGROUND_FEATURES["soldier"][1]
+
+    def test_no_background_no_box(self):
+        char = _make_fighter()
+        char.background = ""
+        assert character_to_field_values(char)["page2"]["features_traits"] is None
+
+    def test_background_feature_left_out_of_magic_box(self):
+        from engine.rules import get_character_features, BACKGROUND_FEATURES
+        char = _make_fighter()
+        char.background = "Soldier"
+        assert BACKGROUND_FEATURES["soldier"] in get_character_features(char)
+        assert BACKGROUND_FEATURES["soldier"] not in get_character_features(char, include_background=False)
+
+    def test_short_text_keeps_full_size(self):
+        from pdf.filler import _layout_titled_text
+        size, title, body = _layout_titled_text(self._canvas(), "Artisan", "A short line.", self._spec())
+        assert size == self._spec()["font_size"]
+        assert title == ["Artisan"] and body == ["A short line."]
+
+    def test_long_text_shrinks_then_is_cut_to_fit(self):
+        from pdf.filler import _layout_titled_text
+        spec = self._spec()
+        size, title, body = _layout_titled_text(self._canvas(), "Innkeeper", "word " * 400, spec)
+        assert size == spec["min_font_size"]
+        assert body[-1].endswith("…")
+        max_lines = int(spec["max_height"] // (size * spec["line_ratio"])) + 1
+        assert len(title) + len(body) <= max_lines
+        c = self._canvas()
+        assert all(c.stringWidth(line, FONT_REGULAR, size) <= spec["max_width"] for line in body)
+
+
+class TestMarkers:
+    """Proficiency dots, expertise diamonds and the inspiration check are drawn as
+    shapes because the sheet font has no glyphs for them."""
+
+    def _overlay_ops(self, field, value, spec):
+        import io
+        from pypdf import PdfReader
+        from pdf.filler import _render_page
+        data = _render_page({field: spec}, {field: value})
+        return PdfReader(io.BytesIO(data)).pages[0].get_contents().get_data()
+
+    @pytest.mark.parametrize("value", ["●", "◆", "✓"])
+    def test_marker_drawn_as_shape_not_text(self, value):
+        ops = self._overlay_ops("skill_prof_x", value, {"x": 100, "y": 100, "font_size": 9, "align": "center"})
+        assert b"Tj" not in ops          # no text drawn
+        assert ops.strip()                # but something is
+
+    def test_font_has_no_marker_glyphs(self):
+        # If this ever fails, the font gained the glyphs and the shapes could go.
+        from fontTools.ttLib import TTFont
+        from pdf.filler import FONT_DIR
+        cmap = TTFont(str(FONT_DIR / "BarlowCondensed-Medium.ttf")).getBestCmap()
+        assert ord("●") not in cmap

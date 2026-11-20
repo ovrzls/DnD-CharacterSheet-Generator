@@ -240,8 +240,8 @@ def generate_text_sheet(char: Character) -> str:
         _txt_cats += _wrap("Weapons: " + ", ".join(char.weapon_proficiencies), indent=4)
     if char.tool_proficiencies:
         _txt_cats += _wrap("Tools: " + ", ".join(char.tool_proficiencies), indent=4)
-    _bg_key = (char.background or "").lower()
-    _bg_skills = BACKGROUND_SKILLS.get(_bg_key, [])
+    _bg_skills = list(char.background_skills) or BACKGROUND_SKILLS.get(
+        (char.background or "").lower(), [])
     if _bg_skills:
         _bg_label = (char.background or "").title()
         _txt_cats += _wrap(f"Background ({_bg_label}): " + ", ".join(_bg_skills), indent=4)

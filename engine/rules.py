@@ -7,6 +7,7 @@ Call derive_stats(character) after setting:
 It fills in all derived fields in-place and returns the Character.
 """
 from __future__ import annotations
+import re
 from engine.character import Character, AbilityScores
 
 # ── Class data tables ────────────────────────────────────────────────────────
@@ -687,8 +688,29 @@ BACKGROUND_FEATURES = {
 }
 
 
-def get_character_features(char: "Character") -> list[tuple[str, str]]:
-    """Return all features for a character as (name, description) tuples."""
+def get_background_feature(char: "Character") -> tuple[str, str] | None:
+    """Return (feature name, description) for the character's background, or None.
+
+    Prefers the short plain-language summary in BACKGROUND_FEATURES. Backgrounds
+    without one fall back to the text the wizard stored from Open5e.
+    """
+    bg = (char.background or "").lower().strip()
+    if bg in BACKGROUND_FEATURES:
+        return BACKGROUND_FEATURES[bg]
+    desc = (getattr(char, "background_feature_desc", "") or "").strip()
+    name = (getattr(char, "background_feature", "") or "").strip()
+    if desc:
+        return (name, desc)
+    return None
+
+
+def get_character_features(char: "Character",
+                           include_background: bool = True) -> list[tuple[str, str]]:
+    """Return all features for a character as (name, description) tuples.
+
+    include_background=False leaves out the background feature, for outputs that
+    show it in a place of its own (the PDF's Features & Traits box).
+    """
     features: list[tuple[str, str]] = []
 
     # Class features at or below character level
@@ -704,9 +726,10 @@ def get_character_features(char: "Character") -> list[tuple[str, str]]:
         features.append((name, desc))
 
     # Background feature
-    bg = (char.background or "").lower()
-    if bg in BACKGROUND_FEATURES:
-        features.append(BACKGROUND_FEATURES[bg])
+    if include_background:
+        bg_feature = get_background_feature(char)
+        if bg_feature:
+            features.append(bg_feature)
 
     return features
 
@@ -983,6 +1006,98 @@ def _compute_ac(char: "Character") -> int:
 
 # ── Main derive function ──────────────────────────────────────────────────────
 
+# ── Background skill grants ────────────────────────────────────────────────────
+# Background text comes in many shapes, e.g.
+#   "Insight, Religion"                          two fixed skills
+#   "Persuasion, and either Insight or History." one fixed, one choice
+#   "Deception, plus your choice of one between Sleight of Hand or Stealth."
+#   "Your choice of two from among Arcana, History, and Persuasion."
+#   "Two of your choice."                        any two skills
+# Skills that are not on the 5e sheet (Culture, Engineering from Level Up A5E)
+# are ignored.
+
+_SKILL_NAMES = [s.title().replace(" Of ", " of ") for s in SKILL_ABILITIES]   # "Sleight of Hand"
+_SKILL_PATTERN = re.compile(
+    r"\b(" + "|".join(re.escape(s) for s in sorted(SKILL_ABILITIES, key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+_NUMBERS = {"one": 1, "two": 2, "three": 3, "1": 1, "2": 2, "3": 3}
+_CHOICE_MARKERS = re.compile(
+    r"(?:,?\s*(?:and|plus)\s+)?"
+    r"(?:either"
+    r"|(?:your\s+)?choice\s+of\s+(?P<n1>one|two|three|\d)\s+(?:between|from(?:\s+among)?)"
+    r"|(?P<n2>one|two|three|\d)\s+of\s+your\s+choice\s+(?:from(?:\s+among)?|between)"
+    r"|choose\s+(?P<n3>one|two|three|\d)\s+(?:from(?:\s+among)?|between))",
+    re.IGNORECASE,
+)
+
+
+def _skills_in(text: str) -> list[str]:
+    """Known 5e skills mentioned in text, in order, without repeats."""
+    found: list[str] = []
+    for m in _SKILL_PATTERN.finditer(text):
+        name = _SKILL_NAMES[list(SKILL_ABILITIES).index(m.group(1).lower())]
+        if name not in found:
+            found.append(name)
+    return found
+
+
+def parse_background_skills(text: str) -> list[tuple[int, list[str]]]:
+    """Turn a background's skill text into groups of (how many to take, options).
+
+    A fixed skill is a group of one with one option. A choice lists its options
+    in the order the text gives them. "Two of your choice" offers every skill.
+    """
+    text = (text or "").strip()
+    if not text:
+        return []
+    m = _CHOICE_MARKERS.search(text)
+    if m:
+        fixed_part, choice_part = text[:m.start()], text[m.end():]
+        count = _NUMBERS.get((m.group("n1") or m.group("n2") or m.group("n3") or "one").lower(), 1)
+        groups = [(1, [s]) for s in _skills_in(fixed_part)]
+        options = _skills_in(choice_part)
+        if options:
+            groups.append((count, options))
+        return groups
+    open_choice = re.search(r"\b(one|two|three|any\s+one)\b[^.]*\b(?:of\s+your\s+choice|skill)", text, re.IGNORECASE)
+    groups = [(1, [s]) for s in _skills_in(text)]
+    if open_choice:
+        word = open_choice.group(1).lower().replace("any ", "")
+        groups.append((_NUMBERS.get(word, 1), list(_SKILL_NAMES)))
+    return groups
+
+
+def resolve_background_skills(text: str, class_skills: list[str]) -> list[str]:
+    """Pick the background's skills.
+
+    Fixed skills are always taken. For a choice, take the options in the order
+    given, skipping any the character already has from their class or from the
+    background's fixed skills. If every option is already held, the first is used.
+    """
+    groups = parse_background_skills(text)
+    held = {s.lower() for s in class_skills}
+    chosen: list[str] = []
+    for count, options in groups:
+        if count == 1 and len(options) == 1:
+            if options[0] not in chosen:
+                chosen.append(options[0])
+            held.add(options[0].lower())
+    for count, options in groups:
+        if count == 1 and len(options) == 1:
+            continue
+        picks = [o for o in options if o.lower() not in held and o not in chosen][:count]
+        for o in options:                      # every option already held
+            if len(picks) >= count:
+                break
+            if o not in chosen and o not in picks:
+                picks.append(o)
+        for o in picks:
+            chosen.append(o)
+            held.add(o.lower())
+    return chosen
+
+
 def derive_stats(character: Character) -> Character:
     """
     Populate all derived fields on a Character from its core choices.
@@ -1032,12 +1147,17 @@ def derive_stats(character: Character) -> Character:
     )
 
     # Skill proficiencies from class + background (merge, deduplicate, preserve any
-    # proficiencies already set on the character — e.g. from the wizard flow)
+    # proficiencies already set on the character — e.g. from the wizard flow).
+    # Background choices are resolved against the class skills only, so calling
+    # derive_stats again gives the same answer.
     bg_key = (character.background or "").lower().strip()
-    auto_skills = (
-        CLASS_SKILLS.get(cls, [])
-        + BACKGROUND_SKILLS.get(bg_key, [])
-    )
+    class_skills = CLASS_SKILLS.get(cls, [])
+    if (character.background_skill_text or "").strip():
+        character.background_skills = resolve_background_skills(
+            character.background_skill_text, class_skills)
+    else:
+        character.background_skills = list(BACKGROUND_SKILLS.get(bg_key, []))
+    auto_skills = class_skills + character.background_skills
     existing = set(character.skill_proficiencies)
     for skill in auto_skills:
         if skill not in existing:

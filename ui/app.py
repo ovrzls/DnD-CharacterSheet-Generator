@@ -140,7 +140,8 @@ def _strip_md(text: str) -> str:
 
 
 def _first_para(text: str, max_chars: int = 260) -> str:
-    text = _strip_md(text or "")
+    # Open5e text uses Windows line endings; normalise so paragraph breaks are found.
+    text = _strip_md((text or "").replace("\r\n", "\n").replace("\r", "\n"))
     paras = [p.strip() for p in text.split("\n\n") if p.strip()]
     para  = paras[0] if paras else text
     if len(para) > max_chars:
@@ -157,6 +158,21 @@ def _save(updates: dict) -> None:
     data.update(updates)
     session["character"] = data
     session.modified = True
+
+
+def _attach_background_feature(char: Character) -> None:
+    """Copy the chosen background's feature and skill grant onto the Character."""
+    if not char.background:
+        return
+    try:
+        bg = next((b for b in _get_backgrounds() if b["name"] == char.background), None)
+    except Exception:
+        bg = None
+    if bg and bg.get("skill_proficiencies"):
+        char.background_skill_text = bg["skill_proficiencies"]
+    if bg and (bg.get("feature_text") or bg.get("feature_desc")):
+        char.background_feature = bg.get("feature", "")
+        char.background_feature_desc = bg.get("feature_text") or bg.get("feature_desc", "")
 
 
 def _build_char(*, equipment: bool = True, spells: bool = True) -> Character:
@@ -200,6 +216,7 @@ def _build_char(*, equipment: bool = True, spells: bool = True) -> Character:
         level=int(data.get("level", 1)),
         ability_scores=ab,
     )
+    _attach_background_feature(char)   # before derive_stats: it needs the skill text
     derive_stats(char)
     if equipment:
         try:
@@ -318,6 +335,8 @@ def _get_backgrounds() -> list[dict]:
                 ),
                 "feature":            _benefit(b.get("benefits", []), "feature", "name"),
                 "feature_desc":       _first_para(_benefit(b.get("benefits", []), "feature"), 400),
+                # Untrimmed first paragraph, for the character sheets
+                "feature_text":       _first_para(_benefit(b.get("benefits", []), "feature"), 4000),
                 "skill_proficiencies": _benefit(b.get("benefits", []), "skill_proficiency"),
             }
             for b in raw if b.get("name")

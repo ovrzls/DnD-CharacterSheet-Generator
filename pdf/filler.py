@@ -24,7 +24,10 @@ from pypdf import PdfReader, PdfWriter
 import pypdf.generic
 
 from engine.character import Character
-from engine.rules import derive_stats, xp_for_level, BACKGROUND_SKILLS, get_character_features
+from engine.rules import (
+    derive_stats, xp_for_level, BACKGROUND_SKILLS, get_character_features,
+    get_background_feature,
+)
 
 _HERE = Path(__file__).parent
 SHEET_PDF = _HERE / "field_maps" / "OtG-Revised-Charactersheet.pdf"
@@ -445,11 +448,103 @@ def _draw_spell_section(
         _draw_text(c, "No spellcasting.", x, cur_y, font_size=body)
         cur_y -= body + 7.0
 
-    features = get_character_features(char)
+    # The background feature has its own box (features_traits), so leave it out here.
+    features = get_character_features(char, include_background=False)
     if features:
         cur_y -= _draw_divider_block(c, x, cur_y, max_width, pad=body + 4.0)
         _draw_features_block(c, x, cur_y, features, max_width=max_width,
                              font_size=body, line_height=body + 2.0)
+
+
+def _background_feature_value(char: Character) -> dict | None:
+    """Title and body for the Features & Traits box: background name, then its feature."""
+    if not char.background:
+        return None
+    feature = get_background_feature(char)
+    return {
+        "title": char.background.strip().title(),
+        "body": feature[1] if feature else "",
+    }
+
+
+def _wrap_lines(c: canvas.Canvas, text: str, font: str, size: float,
+                max_w: float) -> list[str]:
+    """Split text into lines that fit max_w. Each "\n" starts a new line."""
+    lines: list[str] = []
+    for para in str(text).split("\n"):
+        words, line = para.split(), ""
+        for word in words:
+            test = f"{line} {word}".strip()
+            if line and c.stringWidth(test, font, size) > max_w:
+                lines.append(line)
+                line = word
+            else:
+                line = test
+        lines.append(line)
+    return lines
+
+
+def _layout_titled_text(c: canvas.Canvas, title: str, body: str, spec: dict
+                        ) -> tuple[float, list[str], list[str]]:
+    """Fit a bold title plus wrapped body into the field's box.
+
+    The box is max_width wide and max_height tall, measured from the first
+    baseline down to the lowest allowed baseline. Lines are font_size * line_ratio
+    apart. If the text is too tall the font shrinks in 0.5 pt steps down to
+    min_font_size; if it still does not fit, the body is cut at the last whole
+    word that fits and ends with "…".
+
+    Returns (font_size, title_lines, body_lines).
+    """
+    max_w = float(spec.get("max_width", 136))
+    max_h = float(spec.get("max_height", 180))
+    size = float(spec.get("font_size", 9.5))
+    min_size = float(spec.get("min_font_size", 8))
+    ratio = float(spec.get("line_ratio", 1.2))
+    gap_em = float(spec.get("paragraph_spacing_em", 0))
+
+    while True:
+        lh = size * ratio
+        title_lines = _wrap_lines(c, title, FONT_BOLD, size, max_w) if title else []
+        body_lines = _wrap_lines(c, body, FONT_REGULAR, size, max_w) if body else []
+        gap = gap_em * size if title_lines and body_lines else 0.0
+        max_lines = int((max_h - gap) // lh) + 1          # first baseline sits at the top
+        if len(title_lines) + len(body_lines) <= max_lines or size <= min_size:
+            break
+        size -= 0.5
+
+    room = max_lines - len(title_lines)
+    if len(body_lines) > room:
+        body_lines = body_lines[:max(room, 0)]
+        if body_lines:
+            last = body_lines[-1]
+            while last and c.stringWidth(last + "…", FONT_REGULAR, size) > max_w:
+                last = last.rsplit(" ", 1)[0] if " " in last else last[:-1]
+            body_lines[-1] = last.rstrip(" ,;:.") + "…"
+    return size, title_lines, body_lines
+
+
+def _draw_titled_text(c: canvas.Canvas, value: dict, spec: dict) -> None:
+    """Draw {"title", "body"}: the title in bold, then the body on the next line."""
+    title = (value.get("title") or "").strip()
+    body = (value.get("body") or "").strip()
+    if not title and not body:
+        return
+    size, title_lines, body_lines = _layout_titled_text(c, title, body, spec)
+    lh = size * float(spec.get("line_ratio", 1.2))
+    gap = float(spec.get("paragraph_spacing_em", 0)) * size if title_lines and body_lines else 0.0
+    x, y = float(spec["x"]), float(spec["y"])
+    color = HexColor(spec["color"]) if spec.get("color") else _DEFAULT_COLOR
+    c.setFillColor(color)
+    c.setFont(FONT_BOLD, size)
+    for line in title_lines:
+        c.drawString(x, y, line)
+        y -= lh
+    y -= gap
+    c.setFont(FONT_REGULAR, size)
+    for line in body_lines:
+        c.drawString(x, y, line)
+        y -= lh
 
 
 def _name_with_pronouns(name: str, pronouns: str) -> str:
@@ -467,6 +562,27 @@ def _fit_single_line(c: canvas.Canvas, text: str, font: str, size: float,
     while size > min_size and c.stringWidth(text, font, size) > max_w:
         size -= 0.5
     return _trunc_to_width(c, text, font, size, max_w), size
+
+
+def _draw_check(c: canvas.Canvas, x: float, y: float, size: float,
+                align: str = "left", color: Any | None = None) -> None:
+    """Draw a check mark (the Inspiration box). The sheet font has no ✓ glyph.
+
+    (x, y) is the text anchor; the mark is about 0.7 em across, centred 0.35 em
+    above the baseline. Proficiency dots are drawn by _draw_marker.
+    """
+    w = size * 0.7
+    cx = {"center": x, "right": x - w / 2}.get(align, x + w / 2)
+    cy = y + size * 0.35
+    r = w / 2
+    ink = color if color is not None else _DEFAULT_COLOR
+    c.setStrokeColor(ink)
+    c.setLineWidth(max(size * 0.14, 1))
+    c.setLineCap(1); c.setLineJoin(1)
+    path = c.beginPath()
+    path.moveTo(cx - r, cy); path.lineTo(cx - r * 0.3, cy - r * 0.7)
+    path.lineTo(cx + r, cy + r * 0.8)
+    c.drawPath(path, fill=0, stroke=1)
 
 
 def _render_page(fields_data: dict, values: dict[str, Any],
@@ -492,6 +608,10 @@ def _render_page(fields_data: dict, values: dict[str, Any],
         value = values.get(field_name)
         if value is None:
             continue
+        if spec.get("type") == "titled_text":
+            if isinstance(value, dict):
+                _draw_titled_text(c, value, spec)
+            continue
         if spec.get("type") == "inventory" and isinstance(value, list):
             if value:
                 _draw_inventory_with_checkboxes(
@@ -509,6 +629,10 @@ def _render_page(fields_data: dict, values: dict[str, Any],
         raw_color = spec.get("color")
         field_color = HexColor(raw_color) if raw_color else None
         text = str(value)
+        if text.strip() == "✓":
+            _draw_check(c, float(spec["x"]), float(spec["y"]),
+                        float(spec.get("font_size", 9)), spec.get("align", "left"), field_color)
+            continue
         font_size = spec.get("font_size", 9)
         if text in ("●", "◆"):
             _draw_marker(c, text, spec["x"], spec["y"], font_size, field_color)
@@ -608,8 +732,8 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         _cat.append("Weapons: " + ", ".join(char.weapon_proficiencies))
     if char.tool_proficiencies:
         _cat.append("Tools: " + ", ".join(char.tool_proficiencies))
-    _bg_key = (char.background or "").lower()
-    _bg_skills = BACKGROUND_SKILLS.get(_bg_key, [])
+    _bg_skills = list(char.background_skills) or BACKGROUND_SKILLS.get(
+        (char.background or "").lower(), [])
     if _bg_skills:
         _cat.append(f"Background ({(char.background or '').title()}): " + ", ".join(_bg_skills))
     if char.languages:
@@ -691,6 +815,7 @@ def character_to_field_values(char: Character) -> dict[str, dict[str, Any]]:
         "hit_points":   str(char.max_hp),
         "movement":     f"{char.speed}ft",
         "num_attacks":  str(num_attacks),
+        "features_traits": _background_feature_value(char),
 
         "save_prof_str": save_prof_marker("strength"),
         "save_str":      save_val("str", "strength"),

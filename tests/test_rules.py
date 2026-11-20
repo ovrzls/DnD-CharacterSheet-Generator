@@ -420,3 +420,91 @@ class TestXpForLevel:
     def test_xp_for_level_20(self):  assert xp_for_level(20) == 355_000
     def test_xp_clamps_below_1(self):  assert xp_for_level(0)  ==       0
     def test_xp_clamps_above_20(self): assert xp_for_level(21) == 355_000
+
+
+# ── Background skill grants ──────────────────────────────────────────────────
+
+from engine.rules import parse_background_skills, resolve_background_skills
+
+
+class TestParseBackgroundSkills:
+    def test_two_fixed(self):
+        assert parse_background_skills("Insight, Religion") == [(1, ["Insight"]), (1, ["Religion"])]
+
+    def test_fixed_plus_either(self):
+        assert parse_background_skills("Persuasion, and either Insight or History.") == [
+            (1, ["Persuasion"]), (1, ["Insight", "History"])]
+
+    def test_plus_your_choice_of_one_between(self):
+        text = "Deception, plus your choice of one between Sleight of Hand or Stealth."
+        assert parse_background_skills(text) == [(1, ["Deception"]), (1, ["Sleight of Hand", "Stealth"])]
+
+    def test_plus_one_of_your_choice_from_among(self):
+        text = "Insight plus one of your choice from among Intimidation or Persuasion"
+        assert parse_background_skills(text) == [(1, ["Insight"]), (1, ["Intimidation", "Persuasion"])]
+
+    def test_choice_of_two_from_among(self):
+        text = "Your choice of two from among Arcana, History, and Persuasion."
+        assert parse_background_skills(text) == [(2, ["Arcana", "History", "Persuasion"])]
+
+    def test_two_of_your_choice_offers_every_skill(self):
+        (count, options), = parse_background_skills("Two of your choice.")
+        assert count == 2 and len(options) == 18
+
+    def test_skills_not_on_the_sheet_are_ignored(self):
+        text = "Culture, History, and either Animal Handling or Persuasion."
+        assert parse_background_skills(text) == [(1, ["History"]), (1, ["Animal Handling", "Persuasion"])]
+
+    def test_empty(self):
+        assert parse_background_skills("") == []
+
+
+class TestResolveBackgroundSkills:
+    ARTISAN = "Persuasion, and either Insight or History."
+
+    def test_defaults_to_first_choice(self):
+        assert resolve_background_skills(self.ARTISAN, ["Athletics", "Intimidation"]) == ["Persuasion", "Insight"]
+
+    def test_uses_second_choice_when_class_has_the_first(self):
+        assert resolve_background_skills(self.ARTISAN, ["Insight", "Stealth"]) == ["Persuasion", "History"]
+
+    def test_class_matching_is_case_insensitive(self):
+        assert resolve_background_skills(self.ARTISAN, ["insight"]) == ["Persuasion", "History"]
+
+    def test_all_choices_held_falls_back_to_first(self):
+        assert resolve_background_skills(self.ARTISAN, ["Insight", "History"]) == ["Persuasion", "Insight"]
+
+    def test_choice_skips_the_backgrounds_own_fixed_skill(self):
+        assert resolve_background_skills("Stealth, and either Stealth or Deception.", []) == ["Stealth", "Deception"]
+
+    def test_choice_of_two_skips_class_skills(self):
+        text = "Your choice of two from among Arcana, History, and Persuasion."
+        assert resolve_background_skills(text, ["Arcana", "History"]) == ["Persuasion", "Arcana"]
+
+
+class TestDeriveStatsBackgroundSkills:
+    def _char(self, cls, background, text=""):
+        char = Character(name="T", char_class=cls, level=1, background=background,
+                         ability_scores=AbilityScores())
+        char.background_skill_text = text
+        return derive_stats(char)
+
+    def test_wizard_text_drives_skills(self):
+        char = self._char("fighter", "Artisan", "Persuasion, and either Insight or History.")
+        assert char.background_skills == ["Persuasion", "Insight"]
+        assert {"Persuasion", "Insight"} <= set(char.skill_proficiencies)
+
+    def test_second_choice_when_class_already_has_first(self):
+        # Druids get Animal Handling from their class, so the Soldier choice moves on.
+        char = self._char("druid", "Soldier", "Athletics, and either Animal Handling or Intimidation.")
+        assert char.background_skills == ["Athletics", "Intimidation"]
+
+    def test_built_in_table_when_no_text(self):
+        char = self._char("fighter", "Sage")
+        assert char.background_skills == ["Arcana", "History"]
+
+    def test_calling_twice_gives_the_same_answer(self):
+        char = self._char("druid", "Soldier", "Athletics, and either Animal Handling or Intimidation.")
+        derive_stats(char)
+        assert char.background_skills == ["Athletics", "Intimidation"]
+        assert char.skill_proficiencies.count("Intimidation") == 1

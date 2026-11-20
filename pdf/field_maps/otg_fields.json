@@ -15,7 +15,7 @@
     "char_class":  {"x": 256, "y": 662, "font_size": 12, "align": "left",   "color": "#851846"},
     "level":       {"x": 393, "y": 662, "font_size": 12, "align": "left",   "color": "#851846"},
     "xp":          {"x": 466, "y": 662, "font_size": 12, "align": "left",   "color": "#851846"},
-    "inspiration": {"x": 229, "y": 625, "font_size":  9, "align": "left"},
+    "inspiration": {"x": 444, "y": 625, "font_size": 14, "align": "center", "color": "#851846"},
 
     "str_score":  {"x":  87, "y": 550, "font_size": 14, "align": "center", "bold": true, "color": "#851846"},
     "str_bonus":  {"x": 221, "y": 552, "font_size": 14, "align": "center", "color": "#851846"},
@@ -95,6 +95,8 @@
     "movement":    {"x": 518, "y": 697, "font_size": 24, "align": "left", "bold": true, "color": "#1c4d4d"},
 
     "num_attacks": {"x": 375, "y": 534, "font_size": 14, "align": "center", "bold": true},
+    "features_traits": {"x": 432, "y": 516, "type": "titled_text", "font_size": 9.5, "min_font_size": 8, "line_ratio": 1.2, "max_width": 136, "max_height": 182, "paragraph_spacing_em": 0, "color": "#1a1a1a",
+                        "_note": "Background name in bold, new line, then the background feature. max_height runs from the first baseline to the lowest allowed baseline (box bottom is y 324.5). Too-long text shrinks to min_font_size, then is cut with an ellipsis."},
 
     "save_prof_str": {"x": 144.5, "y": 629.4, "font_size":  9, "align": "center", "bold": true, "color": "#1c4d4d"},
     "save_str":      {"x": 175,   "y": 626,   "font_size": 14, "align": "center", "bold": true, "color": "#1c4d4d"},

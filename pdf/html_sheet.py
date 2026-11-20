@@ -355,8 +355,8 @@ def generate_html_sheet(char: Character) -> str:
         _prof_rows.append(f"<dt>Weapons</dt><dd>{h(', '.join(char.weapon_proficiencies))}</dd>")
     if char.tool_proficiencies:
         _prof_rows.append(f"<dt>Tools</dt><dd>{h(', '.join(char.tool_proficiencies))}</dd>")
-    _bg_key = (char.background or "").lower()
-    _bg_skills = BACKGROUND_SKILLS.get(_bg_key, [])
+    _bg_skills = list(char.background_skills) or BACKGROUND_SKILLS.get(
+        (char.background or "").lower(), [])
     if _bg_skills:
         _bg_label = h((char.background or "").title())
         _prof_rows.append(f"<dt>Background ({_bg_label})</dt><dd>{h(', '.join(_bg_skills))}</dd>")
